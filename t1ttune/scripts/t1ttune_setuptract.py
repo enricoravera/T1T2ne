@@ -20,24 +20,21 @@ class SetupTractCmd(BaseCommand):
     
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument('--S2', nargs='?', help='The Lipari-Szabo order parameter S2 to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one')
+        parser.add_argument('--S2', nargs='*', help='The Lipari-Szabo order parameter S2 to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one')
         parser.add_argument('--idp', action='store_true', help='Whether to use the IDP model to extract the order parameter S2 instead of tau_c.')
         parser.add_argument('--MW', type=float, help='The molecular weight of the protein in kDa, to be used for estimating the tau_slow in the IDP model. If not specified, will raise an error if --idp is used.')
         parser.add_argument('--corr_window_idp', type=int, default=20, help='To estimate the correlation time of the intermediate motion in the IDP model, a correlation time of a peptide of 20 residues is used by default. This parameter allows to change this value if needed.')
         parser.add_argument('--T', type=float, default=298.15, help='The temperature in Kelvin, to be used for estimating the tau_slow in the IDP model. Default is 298 K.')
-        parser.add_argument('--nT', nargs='?', help='The number of increments in the suggested vdlist. For this module only one value must be provided. Default is 8.')
+        parser.add_argument('--nT', nargs='*', help='The number of increments in the suggested vdlist. For this module only one value must be provided. Default is 8.')
         parser.add_argument('--r', type=float, default=1.02, help='The length of the 1H-15N bond in Angstroms. Default is 1.02 A.')
         parser.add_argument('--Deltasigma', type=float, default=-160, help='The chemical shift anisotropy of the 15N nucleus in ppm. Default is -160 ppm.')
         parser.add_argument('--theta', type=float, default=17, help='The angle between the 1H-15N bond and the principal axis of the CSA tensor in degrees. Default is 17 degrees.')
-        parser.add_argument('--B0', type=float, help='The magnetic field strength in Tesla. If not provided, the script will try to load it from the config file. If it is not found in the config file, an error will be raised.')
+        parser.add_argument('--B0', nargs='*', help='The magnetic field strength in Tesla. If not provided, the script will try to load it from the config file. If it is not found in the config file, an error will be raised.')
         parser.add_argument('--nucs', nargs='*', default=['1H', '15N'], help='The nuclei to use for the calculation of the relaxation rates. Default is 1H and 15N.')
     @staticmethod
     def run(args):
         CO = t1ttune_utils.Conf_Optns(args, module='setuptract')
-        if args.B0 is not None:
-            CO.B_0 = args.B0
-        else:
-            CO.get_B0(config_p=t1ttune_utils.load_config())        
+ 
         suggest_tract_vdlist(CO)
         t1ttune_utils.the_end(CO)    
         exit()        
@@ -66,9 +63,12 @@ def suggest_tract_vdlist(CO):
          The function prints the suggested vdlist in Bruker-readable format and updates the ``references`` attribute of the ``CO`` object with the references used for the calculations.
 
     """
-    nT = CO.nT[0] if isinstance(CO.nT, list) else CO.nT
+    if hasattr(CO, 'nT'):
+        nT = CO.nT[0] if isinstance(CO.nT, list) else CO.nT
+    else:
+        nT = 8
     CO.add_ref('lee')
-    if CO.idp:
+    if CO.options['idp']:
         CO.add_ref('rezaei-ghaleh')
     CO.add_ref('fushman')
     R1, R2, nOe = fun_hetrelax_models.R1R2nOe(CO.B_0, r=CO.r, nuc1=CO.nucs[0], nuc2=CO.nucs[1], Deltasigma=CO.Deltasigma, func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))

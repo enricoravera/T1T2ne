@@ -26,10 +26,10 @@ class NSCmd(BaseCommand):
         parser.add_argument('--hsqc', nargs=1, help='expno of the reference HSQC spectrum (used to estimate the SNR). Either this or --tract should be provided')
         parser.add_argument('--nres', type=int, help='The number of non-proline residues in the protein. If not provided, it will be estimated from the molecular weight.')
         parser.add_argument('--lw', type=float, help='The linewidth of the peaks in the reference spectrum in Hz. If not provided, it will be estimated from the reference spectrum.')
-        parser.add_argument('--xred', nargs='?', help='The percent residual signal for the longest delay of the experiment, or NOE efficiency as percentage. Accepts a list, computes the optimal number of scans for each value')
+        parser.add_argument('--xred', nargs='*', help='The percent residual signal for the longest delay of the experiment, or NOE efficiency as percentage. Accepts a list, computes the optimal number of scans for each value')
         parser.add_argument('--T', nargs=1, help='Temperature in Kelvin (used to recompute tau_c based on temperature)')
         parser.add_argument('--phase', '-p', action='store_true', help='Whether to phase the spectra.')
-        parser.add_argument('--S2', nargs='?', help='The order parameters to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one')
+        parser.add_argument('--S2', nargs='*', help='The order parameters to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one')
         parser.add_argument('--idp', action='store_true', help='Whether to use the IDP model to compute the spectral density function.')
         parser.add_argument('--MW', type=float, help='The molecular weight of the protein in kDa, used to estimate the number of residues of the protein. In the IDP model it is also used to compute tau_slow. If not specified, will raise an error if --idp is used.')
         parser.add_argument('--corr_window_idp', type=float, default=20, help='To estimate the correlation time of the intermediate motion in the IDP model, a correlation time of a peptide of 20 residues is used by default. This parameter allows to change this value if needed.')
@@ -57,19 +57,20 @@ def estimate_snr(CO):
     CO : Conf_Optns object
         The configuration object containing the necessary information to load the data and perform the analysis.
         The CO object should have the following attributes:
-        B_0 : float
+        
+        *   B_0 : float
             The magnetic field strength in Tesla.
-        S2 : list of float
+        *   S2 : list of float
             The order parameters to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one.
-        tau : list of float
+        *   tau : list of float
             The correlation times to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one.
-        hsqcexpno : str, optional
+        *   hsqcexpno : str, optional
             The experiment number of the HSQC reference spectrum to use for the SNR estimation.
-        tractexpno : str, optional
+        *   tractexpno : str, optional
             The experiment number of the TRACT spectrum to use for the SNR estimation. 
-        T : float, optional
+        *   T : float, optional
             The temperature in Kelvin, used to recompute tau_c based on temperature.
-        nres : int, optional
+        *   nres : int, optional
             The number of non-proline residues in the protein. If not provided, it will be estimated from the molecular weight using a rough estimate of 110 Da per residue and multiplying by 0.937 to account for the fact that prolines do not have an amide proton and therefore do not contribute to the signal in the HSQC spectrum.
         
 
@@ -101,7 +102,7 @@ def estimate_snr(CO):
     else:
         nres = np.rint(MW/0.110)*(0.937) #average mass of an amino acid is 110 Da, and we multiply by 0.937 to account for the fact that prolines do not have an amide proton and therefore do not contribute to the signal in the HSQC spectrum. This is a rough estimate, but it should be sufficient for our purposes.
     
-    if CO.idp:
+    if CO.options['idp']:
         tau_slow = CO.tau[0]
         tau_int = CO.tau[1]
         S2_slow = CO.S2[0]
@@ -188,7 +189,8 @@ def suggest_scans(CO, SNR):
     CO : Conf_Optns object
         The configuration object containing the necessary information to perform the analysis.
         The CO object should have the following attributes:
-        xred : list of float
+        
+        *   xred : list of float
             The percent residual signal for the longest delay of the experiment, or NOE efficiency as percentage. Accepts a list, computes the optimal number of scans for each value.
     SNR : float
         The estimated signal-to-noise ratio per scan for a single peak.

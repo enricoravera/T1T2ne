@@ -26,6 +26,7 @@ class TractCmd(BaseCommand):
         parser.add_argument('--basedir', type=str, help='The base directory where the data is stored.')
         parser.add_argument('--tract', type=str, help='The name of the TRACT experiment to analyze.')
         parser.add_argument('--integrate', '-i', action='store_true', help='Whether to perform the analysis using integrals of the spectra instead of point-by-point fitting.')
+        parser.add_argument('--readints', action='store_true', help='Whether to read pre-computed integrals instead of calculating them from the spectra. If --integrate is not used, this option is ignored.')
         parser.add_argument('--selectregion', '-s', action='store_true', help='Whether to select a region of the spectrum for the analysis instead of using a default range.')
         parser.add_argument('--phase', '-p', action='store_true', help='Whether to phase the spectra.')
         parser.add_argument('--S2', nargs='?', help = 'The Lipari-Szabo order parameter S2 to use for the calculation of tau_c. Caution: even if --idp is used, a single value should be provided.')
@@ -45,7 +46,7 @@ class TractCmd(BaseCommand):
     @staticmethod
     def run(args: argparse.Namespace) -> None:
         CO = t1ttune_utils.Conf_Optns(args, module='tract')
-        tract(CO,args)
+        tract(CO)
         t1ttune_utils.the_end(CO)
         
 def filter_data(y, window_length=5, polyorder=3):
@@ -122,7 +123,7 @@ def make_plot(CO, xaxis, y_rec, yerr_rec, y_ave, yerr_ave, values, name='tau_c')
     ax.set_xlabel(r'$\delta$ (ppm)')
     ax.set_ylabel(r'$\tau_c$ estimate (s)')
     ax.set_yscale('log')
-    ax.text(0.05, 0.95, f'expected T1 = {1/R1:.2f} s\nexpected T2 = {1/R2:.2f} s\nexpected hetnOe = {nOe:.2f}\nexpected eta_z = {eta_z:.2f}\nexpected eta_xy = {eta_xy:.2f}', transform=ax.transAxes, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    ax.text(0.05, 0.95, f'expected $T_1$ = {1/R1:.2f} s\nexpected $T_2$ = {1/R2:.2f} s\nexpected hetnOe = {nOe:.2f}\nexpected $\eta_z$ = {eta_z:.2f}\nexpected $\eta_{{xy}}$ = {eta_xy:.2f}', transform=ax.transAxes, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
     ax.legend(loc='lower right', bbox_to_anchor=(0.95, 0.905), ncols=2, bbox_transform=fig.transFigure)
     cursor = MultiCursor(fig.canvas, (ax, axs), color='green', linewidth=0.4, horizOn=False)        
@@ -236,24 +237,27 @@ def tract_fit_Ra_Rb(CO):
     CO : Conf_Optns object
         The configuration object containing the necessary information to load the data and perform the analysis.
         CO must contain the following options:
-        integrate : bool
+        
+        *   integrate : bool
             Whether to perform the analysis using integrals of the spectra instead of point-by-point fitting. Default is False.
-        selectregion : bool
+        *   selectregion : bool
             Whether to select a region of the spectrum for the analysis instead of using a default range. Default is False.
-        phase : bool
+        *   phase : bool
             Whether to phase the spectra. Default is False.
-        basedir : str
+        *   basedir : str
             The base directory where the data is stored.
-        tract : str
+        *   tract : str
             The name of the TRACT experiment to analyze.
+
         CO must also contain the following attributes:
-        r : float
+
+        *   r : float
             The length of the 1H-15N bond in meters. Default is 1.02e-10 m.
-        Deltasigma : float
+        *   Deltasigma : float
             The chemical shift anisotropy of the 15N nucleus. Default is -160 ppm.
-        theta : float
+        *   theta : float
             The angle between the 1H-15N bond and the principal axis of the CSA tensor in radians. Default is 17 degrees converted to radians.
-        nucs : list of str
+        *   nucs : list of str
             The list of nuclei to use for the calculation of the relaxation rates. Default is ['1H', '15N'].  
     Returns
     -------
@@ -278,16 +282,19 @@ def tract_fit_Ra_Rb(CO):
     vdlist = np.loadtxt(vdlistpath)
     
     integrate = CO.options['integrate']
+    readints = CO.options['readints']
     selectregion = CO.options['selectregion']
     phase = CO.options['phase']
     smooth_data = CO.options['smoothdata']
     smooth_rates = CO.options['smoothrates']
-    slw = CO.slw
+    if hasattr(CO.options, 'slw') and CO.options['slw'] is not None:
+        slw = CO.options['slw']
 
     #load the dataset and check if it's a TRACT experiment
     S = kz.Pseudo_2D(path)
     if not t1ttune_utils.istract(S):
         raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
+    
     #splitcomb-like operation to separate the two interleaved datasets (TROSY and ANTITROSY)
     S.fid = np.reshape(S.fid.flatten(), (2*S.fid.shape[0], -1))
     Sa = deepcopy(S)
@@ -342,14 +349,14 @@ def tract_fit_Ra_Rb(CO):
     #       Integrals
         for k, (filename, s) in enumerate(zip(filenames, [Sb, Sa])):
             if k == 0:    # => TROSY component
-                if integrate[0] == 'c':       # compute the integrals  
+                if not readints:       # compute the integrals  
                     s.integrate(filename=filename)
                 else:       # read an integrals file
                     s.read_integrals(filename=f'{filename}.igrl')
             else:       # => ANTITROSY component
                 # Get the integration regions from the TROSY spectrum
                 limits = kz.misc.key_to_limits(list(Sb.integrals.keys()))
-                if integrate[0] == 'c':       # integrate in the same regions of the TROSY
+                if not readints:       # integrate in the same regions of the TROSY
                     s.integrate(filename=filename, lims=limits)
                 else:       # read an integrals file
                     s.read_integrals(filename=f'{filename}.igrl')
@@ -397,11 +404,11 @@ def tract_fit_Ra_Rb(CO):
     CO.Sb = Sb
     CO.Sa = Sa
     CO.xaxis = xaxis
-    CO.signalregion = signalregion
+    #CO.signalregion = signalregion
     
-    return xaxis, Ra, Rb, sigma_Ra, sigma_Rb
+    return xaxis, Ra, Rb, sigma_Ra, sigma_Rb, S.acqus['B0'], S.acqus['B0'] * kz.sim.gamma[CO.nucs[1]] * 2 * np.pi * 1e6
 
-def tract_compute_tau(B_0, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
+def tract_compute_tau(w_N, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
     """
     Compute the tau_c values from the relaxation rates Ra and Rb obtained from the TRACT experiment using the algebraic analysis described in Robson et al. (2021), `doi:10.1007/s10858-021-00379-5`_.
     
@@ -410,6 +417,8 @@ def tract_compute_tau(B_0, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Delta
     Parameters
     ----------
 
+    w_N : float
+        The Larmor frequency of the nucleus of interest (in radians per second).
     Ra : array_like
         The relaxation rates of the ANTITROSY component of the TRACT experiment.
     Rb : array_like
@@ -440,19 +449,31 @@ def tract_compute_tau(B_0, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Delta
     # equation (6)
     dN = fun_hetrelax_models.c(Deltasigma=Deltasigma, nuc=nuc2)        # 15N CSA
     # equation (7)
-    w_N = B_0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
+    #w_N = B_0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
         # from equivalence between equation (8) RHS and equation (9) RHS
     c = (Rb - Ra)/(dN*p*(3*np.cos(theta)**2-1))
     #compute the uncertainty on c by propagating the uncertainties on Rb and Ra, assuming they are independent
+
+    #print(f'average c = {np.mean(c):.2e} ± {np.std(c):.2e}')
+    #print(f'average Rb = {np.mean(Rb):.2f} ± {np.std(Rb):.2f}')
+    #print(f'average Ra = {np.mean(Ra):.2f} ± {np.std(Ra):.2f}')
+
     sigma_eta = 0.5 * np.sqrt(sigma_Rb**2 + sigma_Ra**2)
     dc_deta = 1 / (dN*p*(3*np.cos(theta)**2-1))
     sigma_c = np.abs(dc_deta) * sigma_eta
 
     #compute tau_c and its uncertainty by propagating the uncertainty on c using numerical differentiation, since the equation is complicated and it's easier to do it numerically than analytically.
     tau_c = tc(w_N, c, S2)
+ 
     dec = 1e-3*sigma_c
     detau_dec = (tc(w_N, c+dec, S2) - tc(w_N, c-dec, S2))/(2*dec)
     sigma_tau_c = np.abs(detau_dec) * sigma_c
+    print('Dipolar coupling constant p = {:.2e} rad/s'.format(p))
+    print('CSA constant dN = {:.2e} rad/s'.format(dN))
+    print('Larmor frequency w_N = {:.2e} rad/s'.format(w_N))
+    print('angle theta = {:.2f} degrees'.format(theta*180/np.pi))
+    print(textcolor(f'average Rb = {np.mean(Rb):.2f} s^-1 ± {np.std(Rb):.2f} s^-1', 'blue', bold=False))
+    print(textcolor(f'average Ra = {np.mean(Ra):.2f} s^-1 ± {np.std(Ra):.2f} s^-1', 'blue', bold=False))
     #compute the average tau_c and its uncertainty using weighted average
     indices = ~np.isnan(tau_c)
     tau_average = np.average(tau_c[indices], weights=1/sigma_tau_c[indices]**2)
@@ -461,7 +482,7 @@ def tract_compute_tau(B_0, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Delta
 
     return tau_c, sigma_tau_c, tau_average, sigma_tau_average
 
-def tract_compute_s2(B_0, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, tau_int = 1.6e-9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
+def tract_compute_s2(w_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, tau_int = 1.6e-9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
     """
     Compute the Lipari-Szabo order parameter :math:`S^2` for the intermediate motion based on the work of Razaei-Ghaleh et al. (2018), `doi:10.1002/anie.201808172`_.
     
@@ -472,6 +493,9 @@ def tract_compute_s2(B_0, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, 
     
     Parameters
     ----------
+    
+    w_N : float
+        The Larmor frequency of the nucleus of interest (in radians per second).
     Ra : array_like
         The relaxation rates of the ANTITROSY component of the TRACT experiment.
     Rb : array_like
@@ -508,7 +532,7 @@ def tract_compute_s2(B_0, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, 
     # equation (6)
     dN = fun_hetrelax_models.c(Deltasigma=Deltasigma, nuc=nuc2)        # 15N CSA
     # equation (7)
-    w_N = B_0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
+    #w_N = B_0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
         # from equivalence between equation (8) RHS and equation (9) RHS
     c = (Rb - Ra)/(dN*p*(3*np.cos(theta)**2-1))
     #compute the uncertainty on c by propagating the uncertainties on Rb and Ra, assuming they are independent
@@ -521,22 +545,29 @@ def tract_compute_s2(B_0, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, 
     dec = 1e-3*sigma_c
     dS2_dec = (s2(w_N, c+dec, tau_slow, S2_slow, tau_int) - s2(w_N, c-dec, tau_slow, S2_slow, tau_int))/(2*dec)
     sigma_S2 = np.abs(dS2_dec) * sigma_c
+    print('Dipolar coupling constant p = {:.2e} rad/s'.format(p))
+    print('CSA constant dN = {:.2e} rad/s'.format(dN))
+    print('Larmor frequency w_N = {:.2e} rad/s'.format(w_N))
+    print('angle theta = {:.2f} degrees'.format(theta*180/np.pi))
+    print(textcolor(f'average Rb = {np.mean(Rb):.2f} s^-1 ± {np.std(Rb):.2f} s^-1', 'blue', bold=False))
+    print(textcolor(f'average Ra = {np.mean(Ra):.2f} s^-1 ± {np.std(Ra):.2f} s^-1', 'blue', bold=False))
+
     print(textcolor(f'average S2 = {np.mean(S2):.2f} ± {np.mean(sigma_S2):.2f}', 'blue', bold=False))
     return S2, sigma_S2, np.mean(S2), np.mean(sigma_S2)
 
 def tract(CO):
 
-    xaxis, Ra, Rb, sigma_Ra, sigma_Rb = tract_fit_Ra_Rb(CO)
+    xaxis, Ra, Rb, sigma_Ra, sigma_Rb, B0_exp, omega_N = tract_fit_Ra_Rb(CO)
     if CO.options['idp']:
-        S2, sigma_S2, S2_average, sigma_S2_average = tract_compute_s2(CO.B_0, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow=CO.tau[0], S2_slow=CO.S2[0], tau_int=CO.tau[1], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])
+        S2, sigma_S2, S2_average, sigma_S2_average = tract_compute_s2(omega_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow=CO.tau[0], S2_slow=CO.S2[0], tau_int=CO.tau[1], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])
         CO.S2.append(S2)
     else:
-        tau_c, sigma_tau_c, tau_average, sigma_tau_average = tract_compute_tau(CO.B_0, Ra, Rb, sigma_Ra, sigma_Rb, S2=CO.S2, r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])    
-        CO.tau=[tau_c, 1e-11]
+        tau_c, sigma_tau_c, tau_average, sigma_tau_average = tract_compute_tau(omega_N, Ra, Rb, sigma_Ra, sigma_Rb, S2=CO.S2[0], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])    
+        CO.tau=[tau_average, 1e-11]
     CO.add_ref('fushman')
-    R1, R2, nOe = fun_hetrelax_models.R1R2nOe(CO.B_0, r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1], func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))
+    R1, R2, nOe = fun_hetrelax_models.R1R2nOe(B0_exp, r=CO.r, Deltasigma=CO.Deltasigma, nuc1=CO.nucs[0], nuc2=CO.nucs[1], func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))
     CO.add_ref('salvi')
-    eta_z, eta_xy = fun_hetrelax_models.eta_z_eta_xy(CO.B_0, f_args=(CO.S2, CO.tau))
+    eta_z, eta_xy = fun_hetrelax_models.eta_z_eta_xy(B0_exp, r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1], f_args=(CO.S2, CO.tau))
     if CO.options['plot']:
         values = {'R1': R1, 'R2': R2, 'nOe': nOe, 'eta_z': eta_z, 'eta_xy': eta_xy} 
         if not CO.options['idp']:
@@ -551,4 +582,7 @@ def tract(CO):
             y_ave = S2_average
             yerr_ave = sigma_S2_average
             name = 'S^2'
-        make_plot(CO, xaxis, y, yerr, y_ave, yerr_ave, values, name=name)     
+        make_plot(CO, xaxis, y, yerr, y_ave, yerr_ave, values, name=name)
+    
+    print(textcolor('Use this command to create the lists for your system', 'green'))
+    print(f't1ttune makelist --tau {CO.tau[0]:.2e} {CO.tau[1]:.2e} --S2 {CO.S2[0]:.2f} {CO.S2[1]:.2f} --idp' if CO.options['idp'] else f't1ttune makelist --tau {CO.tau[0]:.2e} --S2 {CO.S2[0]:.2f}')     

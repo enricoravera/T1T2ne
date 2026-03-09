@@ -20,9 +20,11 @@ def config_exists():
     """
     findfs_info = f_findfs.find_topspin()
     if not findfs_info["found"]:
-        raise RuntimeError("TopSpin does not appear to be installed on this workstation.")
+        print("TopSpin does not appear to be installed on this workstation.")
+        return None
     if not findfs_info["spectrometer"]:
-        raise RuntimeError("TopSpin does not appear to be installed on a spectrometer workstation.")
+        print("TopSpin does not appear to be installed on a spectrometer workstation.")
+        return None
     fspath = findfs_info["install_path"]
     nmrsupath = os.path.join(fspath, 'conf', 'nmrsuperuser')
     with open(nmrsupath) as file:
@@ -148,19 +150,27 @@ def splashscreen(module = None):
     None
     """
     
-    print('\n*****************************************************')
-    print('*                                                   *')
-    print('*                    T-oneT-tune                    *')
-    print('*                                                   *')
+
+    
+    
+    print('\n' + '*' * (50))
+    print('*' + ' ' * (48) + '*')
+    print('*' + ' ' * ((48 - 12) // 2) + 'T-one-T-tune' + ' ' * ((48 - 12) // 2) + '*')
+    print('*' + ' ' * (48) + '*')
     if module:
-        print(f'*                    {module} module                    *')
-    print('*                                                   *')
-    print('*****************************************************')
-    print('* Authors:                                          *')
-    print('*     Enrico Ravera, University of Florence         *')
-    print('*     Francesco Bruno, University of Florence       *')
-    print('*     Letizia Fiorucci, MPI KoFo                    *')            
-    print('*****************************************************\n')
+        length = len(module) + 7 # length of the module name + " module"
+        isdivisible = (48 - length) % 2 == 0
+        if isdivisible:
+            print('*' + ' ' * ((48 - length) // 2) + f'{module} module' + ' ' * ((48 - length) // 2) + '*')
+        else:
+            print('*' + ' ' * ((48 - length) // 2) + f'{module} module' + ' ' * ((48 - length) // 2 + 1) + '*')
+    print('*' + ' ' * (48) + '*')
+    print('**************************************************')
+    print('* Authors:                                       *')
+    print('*     Enrico Ravera, University of Florence      *')
+    print('*     Francesco Bruno, University of Florence    *')
+    print('*     Letizia Fiorucci, MPI KoFo                 *')            
+    print('**************************************************\n')
 
 def the_end(CO):
     """
@@ -219,6 +229,7 @@ class Conf_Optns:
         self.eval_truefalse(parser)
         self.evaluate_S2_tau(parser)
         self.check_values(parser)
+        self.get_experiment(config_p=load_config())
         
         
     def add_ref(self, ref):
@@ -236,7 +247,10 @@ class Conf_Optns:
             The function updates the ``citelist`` and ``doilist`` attributes of the ``CO`` object with the reference and its DOI, respectively. If the reference is already present in the ``doilist``, it is not added again.
                 
         """
-        
+        if not hasattr(self, 'doilist'):
+            self.doilist = []
+        if not hasattr(self, 'citelist'):
+            self.citelist = []
         if self.refdictionary[ref][1] not in self.doilist:
             self.doilist.append(self.refdictionary[ref][1])
             self.citelist.append(self.refdictionary[ref][0])
@@ -244,35 +258,42 @@ class Conf_Optns:
     def eval_truefalse(self, parser):
         """
         Evaluate the true/false options and store them in the ``options`` attribute of the ``CO`` object. The options are:
-        - integrate: whether to perform the analysis using integrals of the spectra instead of point-by-point fitting. This option is used in the analysis of TRACT experiments.
-        - selectregion: whether to select a region of the spectrum for the analysis instead of using a default range. This option is used in the analysis of TRACT experiments.
-        - phase: whether to phase the spectra. This option is used in the analysis of TRACT experiments and for the NS module.
-        - smoothdata: whether to apply a Savitzky-Golay filter to the spectra before the analysis. This option is used in the analysis of TRACT experiments.
-        - smoothrates: whether to apply a Savitzky-Golay filter to the relaxation rates before the design of the T1 and T2 experiments. This option is used in the design of T1 and T2 experiments.
-        - plot: whether to plot the spectra and the results of the analysis. This option is used in the analysis of TRACT experiments.
-        - logscale: whether to create a logarithmically spaced vdlist for the design of T1 and T2 experiments. This option is used in the design of T1 and T2 experiments and in the setup of TRACT experiments.
-        - large: whether to create the lists for the "large" sequence, which is optimized for short T2 times. This option is used in the design of T1 and T2 experiments. If True, the d21 value is set to 450 us and only 8 cycles per CPMG block are used instead of 16.
-        - small: whether to create the lists for the "small" sequence, which is optimized for long T2 times. This option is used in the design of T1 and T2 experiments. If True, the d21 value is set to 600 ms and 16 cycles per CPMG block are used.
-        - idp: whether to use the IDP model to extract the order parameter S2 instead of tau_c. This option is used in the analysis of TRACT experiments and in the design of T1 and T2 experiments. If True, the molecular weight of the protein must be provided using the --MW argument.
+        
+            - integrate: whether to perform the analysis using integrals of the spectra instead of point-by-point fitting. This option is used in the analysis of TRACT experiments.
+            - selectregion: whether to select a region of the spectrum for the analysis instead of using a default range. This option is used in the analysis of TRACT experiments.
+            - phase: whether to phase the spectra. This option is used in the analysis of TRACT experiments and for the NS module.
+            - smoothdata: whether to apply a Savitzky-Golay filter to the spectra before the analysis. This option is used in the analysis of TRACT experiments.
+            - smoothrates: whether to apply a Savitzky-Golay filter to the relaxation rates before the design of the T1 and T2 experiments. This option is used in the design of T1 and T2 experiments.
+            - plot: whether to plot the spectra and the results of the analysis. This option is used in the analysis of TRACT experiments.
+            - logscale: whether to create a logarithmically spaced vdlist for the design of T1 and T2 experiments. This option is used in the design of T1 and T2 experiments and in the setup of TRACT experiments.
+            - large: whether to create the lists for the "large" sequence, which is optimized for short T2 times. This option is used in the design of T1 and T2 experiments. If True, the d21 value is set to 450 us and only 8 cycles per CPMG block are used instead of 16.
+            - small: whether to create the lists for the "small" sequence, which is optimized for long T2 times. This option is used in the design of T1 and T2 experiments. If True, the d21 value is set to 600 ms and 16 cycles per CPMG block are used.
+            - idp: whether to use the IDP model to extract the order parameter S2 instead of tau_c. This option is used in the analysis of TRACT experiments and in the design of T1 and T2 experiments. If True, the molecular weight of the protein must be provided using the --MW argument.
+            - randomize: whether to randomize the order of the values in the vdlist for the design of T1 and T2 experiments. This option is used in the design of T1 and T2 experiments.
 
-        Parameters:
+        Parameters
+        ----------
         parser : argparse.Namespace
             The parser object containing the command-line arguments.
-        Returns:
+
+        Returns
+        -------
         None
-        updates the ``options`` attribute of the ``CO`` object with the evaluated options and adds the references. If the options are mutually exclusive, it raises a ValueError with an appropriate message.
+            Updates the ``options`` attribute of the ``CO`` object with the evaluated options and adds the references. If the options are mutually exclusive, it raises a ValueError with an appropriate message.
         """
         self.options = {
-            'integrate': parser.integrate, # tract options
-            'selectregion': parser.selectregion, #tract options
-            'phase': parser.phase, #tract and ns options
-            'smoothdata': parser.smoothdata, # tract options
-            'smoothrates': parser.smoothrates, # tract options
-            'plot': parser.plot, #tract options
-            'logscale': parser.logscale, # makelists or setuptract options
-            'large': parser.large, # makelists option
-            'small': parser.small, # makelists option
-            'idp': parser.idp # all except ns
+            'integrate': parser.integrate if hasattr(parser, 'integrate') else None, # tract options
+            'selectregion': parser.selectregion if hasattr(parser, 'selectregion') else None, #tract options
+            'phase': parser.phase if hasattr(parser, 'phase') else None, #tract and ns options
+            'smoothdata': parser.smoothdata if hasattr(parser, 'smoothdata') else None, # tract options
+            'smoothrates': parser.smoothrates if hasattr(parser, 'smoothrates') else None, # tract options
+            'plot': parser.plot if hasattr(parser, 'plot') else None, #tract options
+            'logscale': parser.logscale if hasattr(parser, 'logscale') else None, # makelists or setuptract options
+            'large': parser.large if hasattr(parser, 'large') else None, # makelists option
+            'small': parser.small if hasattr(parser, 'small') else None, # makelists option
+            'idp': parser.idp if hasattr(parser, 'idp') else None, # all except ns
+            'randomize': parser.randomize if hasattr(parser, 'randomize') else None, # makelists option
+            'readints': parser.readints if hasattr(parser, 'readints') else None # tract options
         }
         if self.module != 'tract':
             if self.options['integrate'] or self.options['selectregion']:
@@ -316,40 +337,43 @@ class Conf_Optns:
         """       
         self.S2 = [0.9]        
         if self.options['idp']:
-            if not parser.MW:
-                raise ValueError('Molecular weight of the protein not provided. Please provide it using the --MW argument.')
+            if not hasattr(parser, 'MW') and not hasattr(parser, 'tau') or (parser.MW is None and parser.tau is None):
+                raise ValueError('Molecular weight or tau of the protein not provided. Please provide it using the --MW or --tau argument.')
             else:
-                self.S2[0] = 0.15
+                self.S2 = [0.15, 0.3]
                 if parser.S2:
-                    self.S2[0] = float(parser.S2[0])                
-                self.MW = float(parser.MW[0])
-                self.add_ref('rezaei-ghaleh')
-                if parser.corr_window_idp:
-                    self.MWi = float(parser.corr_window_idp[0]) * 0.110
+                    self.S2[0] = float(parser.S2[0])
+                    if len(parser.S2) > 1:
+                        self.S2[1] = float(parser.S2[1])
+                    self.add_ref('rezaei-ghaleh')
+            if parser.corr_window_idp:
+                self.MWi = float(parser.corr_window_idp) * 0.110
         else:
             if parser.S2:
                 self.S2[0] = float(parser.S2[0])
                 
         self.T = 298.15
         if parser.T:
-            self.T = float(parser.T[0])
-        if parser.MW:
-            self.MW = float(parser.MW[0])
-        if parser.tau:
+            self.T = float(parser.T)
+        if hasattr(parser, 'tau'):
             self.tau = [float(t) for t in parser.tau]
+        if parser.MW:
+            self.MW = float(parser.MW)
+            self.tau = [(self.MW * 0.5998 + 0.1674) * 1e-9]
+            self.add_ref('cavanagh')
         if self.options['idp']:
             self.tau = [(self.MW * 0.5998 + 0.1674) * 1e-9]
+            self.add_ref('cavanagh')
             if self.T != 298.15:
                 self.tau[0] = hydrodynamics_utils.recompute_tau(self.tau[0], self.T)
             self.tau.append((self.MWi * 0.5998 + 0.1674) * 1e-9 if hasattr(self, 'MWi') else 1.6e-9) # default value for the correlation time of the intermediate motion in the IDP model is 1.6 ns
-        self.tau.append(1e-11) # the fast motion is always set to 10 ps.
-        if parser.basedir:
+            self.add_ref('rezaei-ghaleh')
+        if hasattr(self, 'tau'):
+            self.tau.append(1e-11) # the fast motion is always set to 10 ps.
+        if hasattr(parser, 'basedir') and parser.basedir is not None:
             self.basedir = parser.basedir[0]
-        if parser.tract:
+        if hasattr(parser, 'tract') and parser.tract is not None:
             self.tract = parser.tract[0]
-        self.slw = parser.slw
-        if parser.suggest_tract_vdlist:
-            self.suggest_tract_vdlist = int(parser.suggest_tract_vdlist[0])
         
     def check_values(self, parser):
         """
@@ -365,34 +389,44 @@ class Conf_Optns:
             The function checks the values provided by the user for compatibility with the options selected and raises ValueError with an appropriate message if any incompatibility is found.
             Updates the attributes of the ``CO`` object with the values provided by the user.
         """
-        if parser.nT:
+        
+        if hasattr(parser, 'nT'):
             if self.module == 'setuptract':
-                if len(parser.nT) != 1:
-                    raise ValueError('The --nT option for the setuptract module can only accept one value, corresponding to the number of T1 and T2 increments to be designed. Please provide one value to use the same number of increments for both T1 and T2.')
-                self.nT = [int(parser.nT[0])]
+                if parser.nT is None:
+                    self.nT = 8
+                else:
+                    if len(parser.nT) != 1:
+                        raise ValueError('The --nT option for the setuptract module can only accept one value, corresponding to the number of T1 and T2 increments to be designed. Please provide one value to use the same number of increments for both T1 and T2.')
+                    self.nT = [int(parser.nT[0])]
             elif self.module == 'makelists':
-                if len(parser.nT) ==1:
-                    self.nT = [int(parser.nT[0]), int(parser.nT[0])]
-                elif len(parser.nT) ==2:
-                    self.nT = [int(parser.nT[0]), int(parser.nT[1])]
+                if parser.nT is None:
+                    self.nT = [8, 8]
                 else:
-                    raise ValueError('The --n option can only accept one or two values, corresponding to the number of T1 and T2 increments to be designed, respectively. Please provide one value to use the same number of increments for both T1 and T2, or two values to specify different numbers for T1 and T2.')
+                    if len(parser.nT) ==1:
+                        self.nT = [int(parser.nT[0]), int(parser.nT[0])]
+                    elif len(parser.nT) ==2:
+                        self.nT = [int(parser.nT[0]), int(parser.nT[1])]
+                    else:
+                        raise ValueError('The --nT option can only accept one or two values, corresponding to the number of T1 and T2 increments to be designed, respectively. Please provide one value to use the same number of increments for both T1 and T2, or two values to specify different numbers for T1 and T2.')
             elif self.module == 'setupsolventpre':
-                if len(parser.nT) == 1:
-                    self.nT = [int(parser.nT[0]), 2]
-                elif len(parser.nT) == 2:
-                    self.nT = [int(parser.nT[0]), int(parser.nT[1])]
-                else:
-                    raise ValueError('The --n option can only accept one or two values, corresponding to the number of T1 and T2 increments to be designed, respectively. Please provide one value to use the same number of increments for both T1 and T2, or two values to specify different numbers for T1 and T2.')
+                if parser.nT is None:
+                    self.nT = [8, 2]
+                else:    
+                    if len(parser.nT) == 1:
+                        self.nT = [int(parser.nT[0]), 2]
+                    elif len(parser.nT) == 2:
+                        self.nT = [int(parser.nT[0]), int(parser.nT[1])]
+                    else:
+                        raise ValueError('The --nT option can only accept one or two values, corresponding to the number of T1 and T2 increments to be designed, respectively. Please provide one value to use the same number of increments for both T1 and T2, or two values to specify different numbers for T1 and T2.')
             else:
-                raise ValueError('The --n option is only valid for the setuptract, makelists, and setupsolventpre modules. Please remove it and run the script again.')
+                raise ValueError('The --nT option is only valid for the setuptract, makelists, and setupsolventpre modules. Please remove it and run the script again.')
         if self.options['smoothdata']: 
-            if not parser.slw:
+            if not hasattr(parser, 'slw') or not parser.slw:
                 self.slw = 5 # default value for the percentage of the spectrum to use for the sliding window smoothing
             else:
                 self.slw = parser.slw[0]
         if self.options['smoothrates']: 
-            if not parser.slw:
+            if not hasattr(parser, 'slw') or not parser.slw:
                 self.slw = 5 # default value for the percentage of the spectrum to use for the sliding window smoothing
             else:
                 self.slw = parser.slw[0]
@@ -401,7 +435,7 @@ class Conf_Optns:
         else:
             self.nucs = ['1H', '15N']
         if parser.r is not None:
-            self.r = parser.r
+            self.r = float(parser.r)*1e-10
         else:
             if '1H' in self.nucs and '15N' in self.nucs:
                 self.r = 1.02e-10 # in meters, default value for the distance between the 1H and 15N nuclei in a protein amide group
@@ -410,33 +444,42 @@ class Conf_Optns:
             else:
                 raise ValueError('Unsupported combination of nuclei. Please provide the r to be used.')
         if parser.Deltasigma is not None:
-            self.Deltasigma = parser.Deltasigma
+            self.Deltasigma = float(parser.Deltasigma)
         else:
             if '15N' in self.nucs and '1H' in self.nucs:
-                self.Deltasigma = 160e-6 # default value for the chemical shift anisotropy of the 15N nucleus in a protein amide group
+                self.Deltasigma = 160 # default value for the chemical shift anisotropy of the 15N nucleus in a protein amide group
             elif '13C' in self.nucs and '1H' in self.nucs:
-                self.Deltasigma = 60e-6 # default value for the chemical shift anisotropy of the 13C nucleus in a protein alpha carbon
+                self.Deltasigma = 60 # default value for the chemical shift anisotropy of the 13C nucleus in a protein alpha carbon
             else:
                 raise ValueError('Unsupported combination of nuclei. Please provide the Deltasigma to be used.')
         if parser.theta is not None:
-            self.theta = parser.theta
+            self.theta = float(parser.theta) * np.pi / 180 # convert from degrees to radians
         else:
             if '15N' in self.nucs and '1H' in self.nucs:
-                self.theta = 17 # in degrees, default value for the angle between the N-H bond and the principal axis of the chemical shift tensor of the 15N nucleus in a protein amide group
+                self.theta = 17 * np.pi / 180 # in radians, default value for the angle between the N-H bond and the principal axis of the chemical shift tensor of the 15N nucleus in a protein amide group 17°
             elif '13C' in self.nucs and '1H' in self.nucs:
-                self.theta = 109 # in degrees, default value for the angle between the C-H bond and the principal axis of the chemical shift tensor of the 13C nucleus in a protein alpha carbon
+                self.theta = 109 * np.pi / 180 # in radians, default value for the angle between the C-H bond and the principal axis of the chemical shift tensor of the 13C nucleus in a protein alpha carbon 109°
             else:
                 raise ValueError('Unsupported combination of nuclei. Please provide the theta to be used.')
+        if hasattr(parser, 'xred'):
+            self.xred = [float(x) for x in parser.xred]
         if self.module=='NS':
-            if parser.xred is not None:
-                self.xred = parser.xred
-            else:
+            if not hasattr(self, 'xred'):
                 print('No value provided for the xred parameter. Defaulting to [0.1, 0.3, 0.7].')
                 self.xred = [0.1, 0.3, 0.7]
             if parser.lw is not None:
                 self.lw = parser.lw
             if parser.nres is not None:
                 self.nres = parser.nres
+        if self.module!='tract':
+            if hasattr(parser, 'B0') and parser.B0 is not None:
+                if len(parser.B0) == 1:
+                    self.B_0 = float(parser.B0[0])
+            
+                else:
+                    raise NotImplementedError('Multiple values for B0 are not supported yet. Please provide one value for the magnetic field strength to be used in the calculations.')
+            else:
+                self.get_B0(config_p=load_config())
         
     def get_B0(self, config_p=None):
         """
@@ -485,16 +528,25 @@ class Conf_Optns:
                 self.tract = input('Please provide the experiment number of the TRACT experiment: ')
                 self.hsqc = input('Please provide the experiment number of the reference HSQC spectrum: ')
         elif os.getlogin() == 'ravera' and socket.gethostname() == 'dual':
-            if self.MW is not None or self.tau is not None:
+            if hasattr(self, 'MW') and self.MW is not None:
+                self.basedir = None
+                self.tract = None
+                self.hsqc = None
+            elif hasattr(self, 'tau') and self.tau is not None:
                 self.basedir = None
                 self.tract = None
                 self.hsqc = None
             else:
-                self.basedir = ['tract']
+                self.basedir = 'tract'
                 self.tract = '36'
                 self.hsqc = '411'
+                print(f'Experiment parameters set for internal test environment: basedir={self.basedir}, tract={self.tract}, hsqc={self.hsqc}')
         else:
-            if self.MW is not None or self.tau is not None:
+            if hasattr(self, 'MW') and self.MW is not None:
+                self.basedir = None
+                self.tract = None
+                self.hsqc = None
+            elif hasattr(self, 'tau') and self.tau is not None:
                 self.basedir = None
                 self.tract = None
                 self.hsqc = None

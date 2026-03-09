@@ -93,6 +93,7 @@ def exponential_model(param, x, multi=1, A=1, a=0):
     array_like
         The exponential model.
     """
+    
     par=param.valuesdict()
     if multi==1:
         k = np.exp(par['k'])
@@ -135,6 +136,7 @@ def fit_exponential(x, y, multi=1):
     lmfit.MinimizerResult
         The result of the least squares optimization.
     """
+    
     param = lmfit.Parameters()
     if multi==1:
         param.add('k', value=0, min=-5, max=5)
@@ -162,6 +164,7 @@ def fit_skewnormal(x,y):
     
     f(x) = A \cdot \frac{1}{\sigma \sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}} \left(1 + \text{erf}\left(\alpha \frac{x-\mu}{\sigma \sqrt{2}}\right)\right) + a
     
+    
     Parameters
     ----------
     x : array_like
@@ -174,6 +177,7 @@ def fit_skewnormal(x,y):
     lmfit.MinimizerResult
         The result of the least squares optimization, which contains the fitted parameters of the skew normal distribution
     """
+    
     param = lmfit.Parameters()
     param.add('a', value=4)
     param.add('u', value=8.25)
