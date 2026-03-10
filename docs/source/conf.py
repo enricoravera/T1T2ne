@@ -17,9 +17,8 @@ copyright = '2026, Francesco Bruno, Letizia Fiorucci, Enrico Ravera'
 author = 'Francesco Bruno, Letizia Fiorucci, Enrico Ravera'
 release = '0.0.1'
 
-package_path = Path(__file__).parent.parent.parent.absolute()
-print('!!!', package_path)
-sys.path.insert(0, package_path)  # Adjust the path to include the parent directory
+package_path = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(package_path))  # Adjust the path to include the parent directory
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
