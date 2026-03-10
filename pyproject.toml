@@ -4,9 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "t1ttune"
-version = "0.0.1"
-description = "  "
-requires-python = ">=3.9"
+version = "0.0.1a"
+description = ""
+requires-python = ">=3.10"
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
 
 [project.scripts]
 # Questo crea il comando `M` nel PATH dopo `pip install`

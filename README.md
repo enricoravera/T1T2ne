@@ -1,4 +1,4 @@
-# T1-Ttune
+# **T1-Ttune**
 
 This software computes the optimal delays for protein dynamics experiments.
 

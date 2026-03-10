@@ -3,13 +3,12 @@
 from setuptools import setup
 from pathlib import Path
 
-#long_description = Path('README.md').read_text(encoding='utf-8')
-with open('README.md', 'r', encoding='utf8') as readmefile:
-    long_description = readmefile.read()
+this_dir = Path(__file__).parent
+long_description = (this_dir / "README.md").read_text(encoding="utf-8")
 
 setup(
         name='t1ttune',
-        version="0.0.1",
+        version="0.0.1a",
         author='Enrico Ravera, Francesco Bruno, Letizia Fiorucci',
         author_email='ravera@cerm.unifi.it',
         description='A collection of scripts for setting up NMR protein dynamics experiments.',
