@@ -48,7 +48,7 @@ def c(Deltasigma=-160, nuc='15N'):
     """
     gamma = kz.sim.gamma[nuc]*2*np.pi*1e6 # in rad T^-1 s^-1
     ds = Deltasigma * 1e-6 # dimensionless
-    c_val = (ds * gamma) / 3 # in rad T^-1 s^-1
+    c_val = -(ds * gamma) / 3# in rad T^-1 s^-1
     #print("c value: ", c_val / (2*np.pi*1e3), " kHz T^-1")
     return c_val
 
@@ -283,11 +283,9 @@ def R1R2nOe(B, r=1.02e-10, nuc1='1H', nuc2='15N', Deltasigma=-160, func=LS_iso, 
     J_nuc2 = J(func, omega(B, nuc2), f_args)
     J_sum = J(func, omega(B, nuc1) + omega(B, nuc2), f_args)
     J_diff = J(func, abs(omega(B, nuc1) - omega(B, nuc2)), f_args)
-    R1 = (d_val**2) * (J_diff + 6 * J_sum) + 3 * ((c_val*B)**2 + d_val**2) * J_nuc2
-    #R1 = (d_val**2) * (J(func, omega(B, nuc1) - omega(B, nuc2), f_args) + 6 * J(func, omega(B, nuc1) + omega(B, nuc2), f_args)) + 3 * ((c_val*B)**2 + d_val**2) * J(func, omega(B, nuc2), f_args)
-    R2 = Rex + 0.5 * (d_val**2) * (J_diff + 6 * J_sum + 6 * J_nuc1) + 0.5 * ((c_val*B)**2 + d_val**2) * (4 * J_0 + 3 * J_nuc2)
-    #R2 = Rex + (d_val**2) * (J(func, omega(B, nuc1) - omega(B, nuc2), f_args) + 6 * J(func, omega(B, nuc1) + omega(B, nuc2), f_args) + 6 * J(func, omega(B, nuc1), f_args)) + ((c_val*B)**2 + d_val**2) * (2 * J(func, 0, f_args) + 3/2 * J(func, omega(B, nuc2), f_args))
-    eta = 1 - (d_val**2) * gamma1overgamma2 * (6 * J_sum - J_diff) / R1
+    R1 = (d_val**2 * (J_diff + 6 * J_sum)) + 3 * (c_val**2 * B**2 + d_val**2) * J_nuc2
+    R2 = Rex + 0.5 * d_val**2 * (J_diff + 6 * J_sum + 6 * J_nuc1) + 0.5 * (c_val**2 * B**2 + d_val**2) * (4 * J_0 + 3 * J_nuc2)
+    eta = 1 - (d_val**2 / R1) * gamma1overgamma2 * (6 * J_sum - J_diff)
     return R1, R2, eta
 
 def eta_z_eta_xy(B, r=1.02e-10, nuc1='1H', nuc2='15N', Deltasigma=-160, theta=17*np.pi/180, func=LS_iso, f_args=([0.9], [1e-9, 1e-11])):
@@ -330,6 +328,6 @@ def eta_z_eta_xy(B, r=1.02e-10, nuc1='1H', nuc2='15N', Deltasigma=-160, theta=17
     P2_costheta = 0.5 * (3 * np.cos(theta)**2 - 1)
     J_0 = J(func, 0, f_args)
     J_nuc2 = J(func, omega(B, nuc2), f_args)
-    eta_z = (1/15) * P2_costheta * d_val * c_val * B * 6 * J_nuc2
-    eta_xy = (1/15) * P2_costheta * d_val * c_val * B * (4 * J_0 + 3 * J_nuc2)
+    eta_z = P2_costheta * d_val * c_val * B * 6 * J_nuc2
+    eta_xy = P2_costheta * d_val * c_val * B * (4 * J_0 + 3 * J_nuc2)
     return eta_z, eta_xy 

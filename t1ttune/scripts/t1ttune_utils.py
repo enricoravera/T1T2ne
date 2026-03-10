@@ -134,7 +134,33 @@ def out_vdlist(vdlist):
     """
     
     for value in vdlist:
-        print(f4(value))    
+        print(f4(value))
+
+def in_vdlist(vdlist_file):
+    """
+    Load vdlist from a Bruker-readable file.
+
+    Parameters
+    ----------
+    vdlist_file : str
+        The path to the file containing the vdlist.
+
+    Returns
+    -------
+    numpy.ndarray
+        The array of values read from the file.
+    """
+    vdlist = []
+    with open(vdlist_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line.endswith('u'):
+                vdlist.append(float(line[:-1]) * 1e-6)
+            elif line.endswith('m'):
+                vdlist.append(float(line[:-1]) * 1e-3)
+            else:
+                vdlist.append(float(line))
+    return np.array(vdlist)
 
 def splashscreen(module = None):
     """
@@ -229,7 +255,7 @@ class Conf_Optns:
         self.eval_truefalse(parser)
         self.evaluate_S2_tau(parser)
         self.check_values(parser)
-        self.get_experiment(config_p=load_config())
+        self.get_experiment(parser, config_p=load_config())
         
         
     def add_ref(self, ref):
@@ -356,18 +382,23 @@ class Conf_Optns:
         if parser.T:
             self.T = float(parser.T)
         if hasattr(parser, 'tau'):
-            self.tau = [float(t) for t in parser.tau]
+            self.tau = [float(t)*1e-9 for t in parser.tau]
         if parser.MW:
             self.MW = float(parser.MW)
-            self.tau = [(self.MW * 0.5998 + 0.1674) * 1e-9]
-            self.add_ref('cavanagh')
+            if not hasattr(self, 'tau'):
+                self.tau = [(self.MW * 0.5998 + 0.1674) * 1e-9]
+                self.add_ref('cavanagh')
+                if self.T != 298.15:
+                    self.tau[0] = hydrodynamics_utils.recompute_tau(self.tau[0], self.T)
         if self.options['idp']:
-            self.tau = [(self.MW * 0.5998 + 0.1674) * 1e-9]
-            self.add_ref('cavanagh')
-            if self.T != 298.15:
-                self.tau[0] = hydrodynamics_utils.recompute_tau(self.tau[0], self.T)
-            self.tau.append((self.MWi * 0.5998 + 0.1674) * 1e-9 if hasattr(self, 'MWi') else 1.6e-9) # default value for the correlation time of the intermediate motion in the IDP model is 1.6 ns
-            self.add_ref('rezaei-ghaleh')
+            if not hasattr(self, 'tau'):
+                self.tau = [(self.MW * 0.5998 + 0.1674) * 1e-9]
+                self.add_ref('cavanagh')
+                if self.T != 298.15:
+                    self.tau[0] = hydrodynamics_utils.recompute_tau(self.tau[0], self.T)
+            if len(self.tau) == 1:
+                self.tau.append((self.MWi * 0.5998 + 0.1674) * 1e-9 if hasattr(self, 'MWi') else 1.6e-9) # default value for the correlation time of the intermediate motion in the IDP model is 1.6 ns
+                self.add_ref('rezaei-ghaleh')
         if hasattr(self, 'tau'):
             self.tau.append(1e-11) # the fast motion is always set to 10 ps.
         if hasattr(parser, 'basedir') and parser.basedir is not None:
@@ -447,7 +478,7 @@ class Conf_Optns:
             self.Deltasigma = float(parser.Deltasigma)
         else:
             if '15N' in self.nucs and '1H' in self.nucs:
-                self.Deltasigma = 160 # default value for the chemical shift anisotropy of the 15N nucleus in a protein amide group
+                self.Deltasigma = -160 # default value for the chemical shift anisotropy of the 15N nucleus in a protein amide group
             elif '13C' in self.nucs and '1H' in self.nucs:
                 self.Deltasigma = 60 # default value for the chemical shift anisotropy of the 13C nucleus in a protein alpha carbon
             else:
@@ -461,7 +492,7 @@ class Conf_Optns:
                 self.theta = 109 * np.pi / 180 # in radians, default value for the angle between the C-H bond and the principal axis of the chemical shift tensor of the 13C nucleus in a protein alpha carbon 109°
             else:
                 raise ValueError('Unsupported combination of nuclei. Please provide the theta to be used.')
-        if hasattr(parser, 'xred'):
+        if hasattr(parser, 'xred') and parser.xred is not None:
             self.xred = [float(x) for x in parser.xred]
         if self.module=='NS':
             if not hasattr(self, 'xred'):
@@ -501,7 +532,7 @@ class Conf_Optns:
         if not hasattr(self, 'B_0'):
             self.B_0 = float(input('Please provide the magnetic field value in Tesla: '))
     
-    def get_experiment(self, config_p=None):
+    def get_experiment(self, parser, config_p=None):
         """
         Configures the experiment folders for the default experiments.
         
@@ -551,7 +582,11 @@ class Conf_Optns:
                 self.tract = None
                 self.hsqc = None
             else:
-                self.basedir = input('Please provide the base directory of the experiment: ')
-                self.tract = input('Please provide the experiment number of the TRACT experiment: ')
-                self.hsqc = input('Please provide the experiment number of the reference HSQC spectrum: ')
+                pass
+        if hasattr(parser, 'basedir') and parser.basedir is not None:
+            self.basedir = parser.basedir
+        if hasattr(parser, 'tract') and parser.tract is not None:
+            self.tract = int(parser.tract)
+        if hasattr(parser, 'hsqc') and parser.hsqc is not None:
+            self.hsqc = int(parser.hsqc)
         

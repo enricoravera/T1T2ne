@@ -8,6 +8,8 @@ from scipy.signal import savgol_filter
 from copy import deepcopy
 import os
 from .textcolor import textcolor
+import matplotlib.pyplot as plt
+from matplotlib.widgets import MultiCursor
 
 from .base import BaseCommand
 from . import f_fit, t1ttune_utils, fun_hetrelax_models
@@ -71,7 +73,7 @@ def filter_data(y, window_length=5, polyorder=3):
         return y
     return savgol_filter(y, window_length=window_length, polyorder=polyorder, axis=-1)
 
-def make_plot(CO, xaxis, y_rec, yerr_rec, y_ave, yerr_ave, values, name='tau_c'):
+def make_plot(CO, xaxis, y_rec, yerr_rec, y_ave, yerr_ave, Ra, Rb, sigma_Ra, sigma_Rb, values, name='tau_c', idx=0):
     """
     Make a plot of the reconstructed tau_c or S2 values as a function of the chemical shift, with error bars and the average value with its error. The plot also includes the expected relaxation rates based on the input parameters, and a reference spectrum of the Sb dataset.
     
@@ -98,19 +100,22 @@ def make_plot(CO, xaxis, y_rec, yerr_rec, y_ave, yerr_ave, values, name='tau_c')
     -------
     None
     """
-    import matplotlib.pyplot as plt
-    from matplotlib.widgets import MultiCursor
+
     R1 = values['R1']
     R2 = values['R2']
     nOe = values['nOe']
     eta_z = values['eta_z']
     eta_xy = values['eta_xy']
     fig = plt.figure()
-    ax = fig.add_subplot(212)
-    axs = fig.add_subplot(211, sharex=ax)        
+    ax = fig.add_subplot(313)
+    axr = fig.add_subplot(312, sharex=ax)
+    axs = fig.add_subplot(311, sharex=ax)        
     fig.set_size_inches(12, 8)
-    axs.plot(CO.Sb.ppm_f2, CO.Sb.rr[0], label='Sb', color='k')
+    axs.plot(CO.Sa.ppm_f2, CO.Sa.rr[idx], label='Sa', color='k')
+    axs.plot(CO.Sb.ppm_f2, CO.Sb.rr[idx], label='Sb', color='tab:gray')
     plt.subplots_adjust(left=0.15, right=0.95, bottom=0.10, top=0.90)
+    axr.errorbar(xaxis, Ra, yerr=sigma_Ra, fmt='.', color='tab:orange', ms=8, ecolor='k', elinewidth=0.4, capsize=2, label=r'$R_a$')
+    axr.errorbar(xaxis, Rb, yerr=sigma_Rb, fmt='.', color='tab:green', ms=8, ecolor='k', elinewidth=0.4, capsize=2, label=r'$R_b$')
     #error bars for tau_c
     ax.errorbar(xaxis, y_rec, yerr=yerr_rec, fmt='.', color='tab:blue', ms=8, ecolor='k', elinewidth=0.4, capsize=2, label=r'reconstructed ${}$'.format(name))
     #and average line
@@ -119,12 +124,21 @@ def make_plot(CO, xaxis, y_rec, yerr_rec, y_ave, yerr_ave, values, name='tau_c')
     ax.fill_between(xaxis, y_ave - yerr_ave, y_ave + yerr_ave, color='tab:red', alpha=0.2)
     #prettify the plot
     kz.misc.pretty_scale(ax, (max(xaxis), min(xaxis)), 'x')
-    kz.misc.pretty_scale(ax, (1e-9,3e-7), 'y')
+    if name=='tau_c':
+        kz.misc.pretty_scale(ax, (1e-9,3e-7), 'y')
+    else:
+        kz.misc.pretty_scale(ax, (-0.1,1.1), 'y')
     ax.set_xlabel(r'$\delta$ (ppm)')
-    ax.set_ylabel(r'$\tau_c$ estimate (s)')
-    ax.set_yscale('log')
+
+    if name=='tau_c':
+        ax.set_ylabel(r'$\tau_c$ estimate (s)')        
+        ax.set_yscale('log')
+    else:
+        ax.set_ylabel(r'$S^2$ estimate')        
     ax.text(0.05, 0.95, f'expected $T_1$ = {1/R1:.2f} s\nexpected $T_2$ = {1/R2:.2f} s\nexpected hetnOe = {nOe:.2f}\nexpected $\eta_z$ = {eta_z:.2f}\nexpected $\eta_{{xy}}$ = {eta_xy:.2f}', transform=ax.transAxes, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
+    kz.misc.pretty_scale(axr, (0, R2+4*np.abs(eta_xy)), 'y')
+    axr.set_ylabel('Relaxation rates (Hz)')
     ax.legend(loc='lower right', bbox_to_anchor=(0.95, 0.905), ncols=2, bbox_transform=fig.transFigure)
     cursor = MultiCursor(fig.canvas, (ax, axs), color='green', linewidth=0.4, horizOn=False)        
     plt.show()
@@ -183,11 +197,17 @@ def s2(w_N, c, tau_slow, S2_slow = 0.15, tau_int = 1.6e-9):
 
     """
     
-    A = 8/5 * S2_slow * tau_slow
-    B = 8/5 * tau_int
-    F = 6/5 * S2_slow * fun_hetrelax_models.J_omega_tau_iso(w_N, tau_slow)
-    G = 6/5 * fun_hetrelax_models.J_omega_tau_iso(w_N, tau_int)
-    S2 = (c - A + F) / (B + G)    
+    J_0_slow = fun_hetrelax_models.J_omega_tau_iso(0, tau_slow)
+    J_nuc2_slow = fun_hetrelax_models.J_omega_tau_iso(w_N, tau_slow)
+    J_0_intermediate = fun_hetrelax_models.J_omega_tau_iso(0, tau_int)
+    J_nuc2_intermediate = fun_hetrelax_models.J_omega_tau_iso(w_N, tau_int)
+    J_0_fast = fun_hetrelax_models.J_omega_tau_iso(0, 1e-11)
+    J_nuc2_fast = fun_hetrelax_models.J_omega_tau_iso(w_N, 1e-11)
+    
+    num = (4) * (S2_slow * J_0_slow + (1 - S2_slow) * J_0_fast) + (3) * (S2_slow * J_nuc2_slow + (1 - S2_slow) * J_nuc2_fast)
+    denom = (4) * (1-S2_slow) * (J_0_intermediate - J_0_fast) + (3) * (1-S2_slow) * (J_nuc2_intermediate - J_nuc2_fast)
+
+    S2 = (np.abs(c) - num) / (denom)    
 
     return S2
 
@@ -220,7 +240,12 @@ def tc(w_N, c, O):
         Rc = (1800*(O**2)*c*(w_N**4) + 125*(c**3)*(w_N**6) + 24*np.sqrt(3)*Rq)**(1/3)
         t2 = (336*(O**2)*(w_N**2) - 25*(c**2)*(w_N**4)) / (D * Rc)
         t3 = Rc / D
-    return t1 - t2 + t3
+    
+    #t1 = (5*c)/24 
+    #t2 = (336*(w_N**2) - 25*(c**2)*(w_N**4)) / (24*(w_N**2) * (1800*c*(w_N**4) + 125*(c**3)*(w_N**6) + 24*np.sqrt(3)*np.sqrt(21952*(w_N**6) - 3025*(c**2)*(w_N**8) + 625*(c**4)*(w_N**10)))**(1/3))
+    #t3 = (1800*c*(w_N**4) + 125*(c**3)*(w_N**6) + 24*np.sqrt(3)*np.sqrt(21952*(w_N**6) - 3025*(c**2)*(w_N**8) + 625*(c**4)*(w_N**10)))**(1/3)/(24*w_N**2) 
+    
+    return t1 - t2 + t3    
 
 def tract_fit_Ra_Rb(CO):
     r"""
@@ -270,7 +295,7 @@ def tract_fit_Ra_Rb(CO):
     CO.add_ref('robson')
     CO.add_ref('Fiorucci')
     CO.add_ref('klassez')
-    
+
     path = os.path.join(CO.basedir, f'{CO.tract}')
     # find vdlist in path
     file = os.listdir(os.path.join(path, 'lists', 'vd'))[0]
@@ -279,7 +304,9 @@ def tract_fit_Ra_Rb(CO):
     #   Print a notification
     print(f'Found {vdlistpath} to be imported as VDLIST')
     #   Actual loading and storage in an attribute
-    vdlist = np.loadtxt(vdlistpath)
+    vdlist = t1ttune_utils.in_vdlist(vdlistpath)
+    
+    idx = np.argmin(np.abs(vdlist))
     
     integrate = CO.options['integrate']
     readints = CO.options['readints']
@@ -299,19 +326,19 @@ def tract_fit_Ra_Rb(CO):
     S.fid = np.reshape(S.fid.flatten(), (2*S.fid.shape[0], -1))
     Sa = deepcopy(S)
     Sb = deepcopy(S)
-    Sa.fid = S.fid[::2]
-    Sb.fid = S.fid[1::2]
+    Sb.fid = S.fid[::2]
+    Sa.fid = S.fid[1::2]
     Sa.acqus['TD1'] = Sa.fid.shape[0]
     Sb.acqus['TD1'] = Sb.fid.shape[0]
     if smooth_data or smooth_rates:
         slw_windowlength = int(S.acqus['TD'] * slw[0] / 100)
 
     #phase the two datasets 
-    for s in [Sb, Sa]:
+    for s in [Sa, Sb]:
         # Window function: exponential with 0.5 Hz linebroadening
         s.procs['wf']['mode'] = 'em'
         s.procs['wf']['lb'] = 1/s.acqus['AQ']
-        if s==Sb:
+        if s==Sa:
             print(f'Line broadening applied: {s.procs["wf"]["lb"]:.2g} Hz')
         # Zerofill to twice the size
         s.procs['zf'] = 2 * s.fid.shape[-1]
@@ -322,16 +349,16 @@ def tract_fit_Ra_Rb(CO):
         s.pknl()
         # Phase the spectrum
         if phase:
-            if s == Sb:
+            if s == Sa:
                 s.adjph()
             else:
-                s.adjph(p0=Sb.procs['p0'], p1=Sb.procs['p1'], pv=Sb.procs['pv'])
+                s.adjph(p0=Sa.procs['p0'], p1=Sa.procs['p1'], pv=Sa.procs['pv'])
         # Qfil the solvent peak
         s.acqus['FnMODE'] = 'No'
-        if s==Sb:
+        if s==Sa:
             s.qfil()
         else:
-            s.qfil(Sb.procs['qfil']['u'], Sb.procs['qfil']['s'] )
+            s.qfil(u=Sa.procs['qfil']['u'], s=Sa.procs['qfil']['s'])
         if smooth_data:
             s.rr = filter_data(s.rr, window_length=slw_windowlength)
 
@@ -379,7 +406,10 @@ def tract_fit_Ra_Rb(CO):
         if selectregion:
             signalregion = kz.fit.get_region(Sb.ppm_f2, Sb.rr[0])
         else:
-            signalregion = [[10, 7]]
+            if CO.options['idp']:
+                signalregion = [[8.6, 7.4]]
+            else:
+                signalregion = [[10, 7]]
         # Sb.strip(signalregion)
         # Sa.strip(signalregion)
         for sreg in signalregion:
@@ -390,6 +420,10 @@ def tract_fit_Ra_Rb(CO):
                 sigma_Rb.append(f_fit.fit_exponential(vdlist, Sb.rr[:, i], multi=1).params['k'].stderr)
                 sigma_Ra.append(f_fit.fit_exponential(vdlist, Sa.rr[:, i], multi=1).params['k'].stderr)
                 xaxis.append(Sb.ppm_f2[i])
+    Rb = [np.exp(r) for r in Rb]
+    Ra = [np.exp(r) for r in Ra]
+    sigma_Rb = [r * s for r, s in zip(Rb, sigma_Rb)]
+    sigma_Ra = [r * s for r, s in zip(Ra, sigma_Ra)]
 
     Rb = np.array(Rb)
     Ra = np.array(Ra)
@@ -406,9 +440,9 @@ def tract_fit_Ra_Rb(CO):
     CO.xaxis = xaxis
     #CO.signalregion = signalregion
     
-    return xaxis, Ra, Rb, sigma_Ra, sigma_Rb, S.acqus['B0'], S.acqus['B0'] * kz.sim.gamma[CO.nucs[1]] * 2 * np.pi * 1e6
+    return xaxis, Ra, Rb, sigma_Ra, sigma_Rb, S.acqus['B0'], idx
 
-def tract_compute_tau(w_N, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
+def tract_compute_tau(B0, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
     """
     Compute the tau_c values from the relaxation rates Ra and Rb obtained from the TRACT experiment using the algebraic analysis described in Robson et al. (2021), `doi:10.1007/s10858-021-00379-5`_.
     
@@ -447,16 +481,14 @@ def tract_compute_tau(w_N, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Delta
     #sqrt2 for both p and dN is not included and is not needed since it cancels out in the final equation
     p = fun_hetrelax_models.d(r=r, nuc1=nuc1, nuc2=nuc2) # DD 1H-15N bond in rad/s
     # equation (6)
-    dN = fun_hetrelax_models.c(Deltasigma=Deltasigma, nuc=nuc2)        # 15N CSA
+    dN = fun_hetrelax_models.c(Deltasigma=Deltasigma, nuc=nuc2) * B0        # 15N CSA
     # equation (7)
-    #w_N = B_0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
+    w_N = B0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
         # from equivalence between equation (8) RHS and equation (9) RHS
-    c = (Rb - Ra)/(dN*p*(3*np.cos(theta)**2-1))
-    #compute the uncertainty on c by propagating the uncertainties on Rb and Ra, assuming they are independent
 
-    #print(f'average c = {np.mean(c):.2e} ± {np.std(c):.2e}')
-    #print(f'average Rb = {np.mean(Rb):.2f} ± {np.std(Rb):.2f}')
-    #print(f'average Ra = {np.mean(Ra):.2f} ± {np.std(Ra):.2f}')
+    c = (Rb - Ra)/(dN*p*(3*np.cos(theta)**2-1))
+
+    #compute the uncertainty on c by propagating the uncertainties on Rb and Ra, assuming they are independent
 
     sigma_eta = 0.5 * np.sqrt(sigma_Rb**2 + sigma_Ra**2)
     dc_deta = 1 / (dN*p*(3*np.cos(theta)**2-1))
@@ -472,17 +504,28 @@ def tract_compute_tau(w_N, Ra, Rb, sigma_Ra, sigma_Rb, S2=0.9, r=1.02e-10, Delta
     print('CSA constant dN = {:.2e} rad/s'.format(dN))
     print('Larmor frequency w_N = {:.2e} rad/s'.format(w_N))
     print('angle theta = {:.2f} degrees'.format(theta*180/np.pi))
-    print(textcolor(f'average Rb = {np.mean(Rb):.2f} s^-1 ± {np.std(Rb):.2f} s^-1', 'blue', bold=False))
-    print(textcolor(f'average Ra = {np.mean(Ra):.2f} s^-1 ± {np.std(Ra):.2f} s^-1', 'blue', bold=False))
+    Rb_avg = np.mean(Rb)
+    Ra_avg = np.mean(Ra)
+    sigma_Rb_avg = np.std(Rb)
+    sigma_Ra_avg = np.std(Ra)
+    c_avg = np.average(c, weights=c**2/sigma_c**2)  #(Rb_avg - Ra_avg)/(dN*p*(3*np.cos(theta)**2-1))
+    sigma_eta_avg = 0.5 * np.sqrt(sigma_Rb_avg**2 + sigma_Ra_avg**2)
+    sigma_c_avg = np.abs(dc_deta) * sigma_eta_avg
+    dec_avg = 1e-3*sigma_c_avg
+    tau_average = tc(w_N, c_avg, S2)
+
+    detau_dec_avg = (tc(w_N, c_avg+dec_avg, S2) - tc(w_N, c_avg-dec_avg, S2))/(2*dec_avg)
+    sigma_tau_average = np.abs(detau_dec_avg) * sigma_c_avg
+    
+    print(textcolor(f'average Rb = {Rb_avg:.2f} s^-1 ± {sigma_Rb_avg:.2f} s^-1', 'blue', bold=False))
+    print(textcolor(f'average Ra = {Ra_avg:.2f} s^-1 ± {sigma_Ra_avg:.2f} s^-1', 'blue', bold=False))
     #compute the average tau_c and its uncertainty using weighted average
-    indices = ~np.isnan(tau_c)
-    tau_average = np.average(tau_c[indices], weights=1/sigma_tau_c[indices]**2)
-    sigma_tau_average = 1/np.sqrt(np.sum(1/sigma_tau_c[indices]**2))
+    print(textcolor(f'average c = {c_avg:.2e} ± {sigma_c_avg:.2e}', 'blue', bold=False))
     print(textcolor(f'average tau_c = {tau_average:.2e} s ± {sigma_tau_average:.2e} s', 'blue', bold=False))
 
     return tau_c, sigma_tau_c, tau_average, sigma_tau_average
 
-def tract_compute_s2(w_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, tau_int = 1.6e-9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
+def tract_compute_s2(B0, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, tau_int = 1.6e-9, r=1.02e-10, Deltasigma=-160, theta=17*np.pi/180, nuc1='1H', nuc2='15N'):
     """
     Compute the Lipari-Szabo order parameter :math:`S^2` for the intermediate motion based on the work of Razaei-Ghaleh et al. (2018), `doi:10.1002/anie.201808172`_.
     
@@ -530,9 +573,9 @@ def tract_compute_s2(w_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, 
     #sqrt2 for both p and dN is not included and is not needed since it cancels out in the final equation
     p = fun_hetrelax_models.d(r=r, nuc1=nuc1, nuc2=nuc2) # DD 1H-15N bond in rad/s
     # equation (6)
-    dN = fun_hetrelax_models.c(Deltasigma=Deltasigma, nuc=nuc2)        # 15N CSA
+    dN = fun_hetrelax_models.c(Deltasigma=Deltasigma, nuc=nuc2) * B0        # 15N CSA
     # equation (7)
-    #w_N = B_0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
+    w_N = B0 * kz.sim.gamma[nuc2] * 2 * np.pi * 1e6                # 15N frequency (radians/s)
         # from equivalence between equation (8) RHS and equation (9) RHS
     c = (Rb - Ra)/(dN*p*(3*np.cos(theta)**2-1))
     #compute the uncertainty on c by propagating the uncertainties on Rb and Ra, assuming they are independent
@@ -549,6 +592,19 @@ def tract_compute_s2(w_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, 
     print('CSA constant dN = {:.2e} rad/s'.format(dN))
     print('Larmor frequency w_N = {:.2e} rad/s'.format(w_N))
     print('angle theta = {:.2f} degrees'.format(theta*180/np.pi))
+    
+    Rb_avg = np.mean(Rb)
+    Ra_avg = np.mean(Ra)
+    sigma_Rb_avg = np.std(Rb)
+    sigma_Ra_avg = np.std(Ra)
+    c_avg = np.average(c, weights=c**2/sigma_c**2)
+    sigma_eta_avg = 0.5 * np.sqrt(sigma_Rb_avg**2 + sigma_Ra_avg**2)
+    sigma_c_avg = np.abs(dc_deta) * sigma_eta_avg
+    dec_avg = 1e-3*sigma_c_avg
+    S2_average = s2(w_N, c_avg, tau_slow, S2_slow, tau_int)
+    dS2_dec_avg = (s2(w_N, c_avg+dec_avg, tau_slow, S2_slow, tau_int) - s2(w_N, c_avg-dec_avg, tau_slow, S2_slow, tau_int))/(2*dec_avg)
+    sigma_S2_average = np.abs(dS2_dec_avg) * sigma_c_avg
+    
     print(textcolor(f'average Rb = {np.mean(Rb):.2f} s^-1 ± {np.std(Rb):.2f} s^-1', 'blue', bold=False))
     print(textcolor(f'average Ra = {np.mean(Ra):.2f} s^-1 ± {np.std(Ra):.2f} s^-1', 'blue', bold=False))
 
@@ -557,17 +613,20 @@ def tract_compute_s2(w_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow, S2_slow = 0.15, 
 
 def tract(CO):
 
-    xaxis, Ra, Rb, sigma_Ra, sigma_Rb, B0_exp, omega_N = tract_fit_Ra_Rb(CO)
+    xaxis, Ra, Rb, sigma_Ra, sigma_Rb, B0_exp, idx = tract_fit_Ra_Rb(CO)
     if CO.options['idp']:
-        S2, sigma_S2, S2_average, sigma_S2_average = tract_compute_s2(omega_N, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow=CO.tau[0], S2_slow=CO.S2[0], tau_int=CO.tau[1], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])
-        CO.S2.append(S2)
+        S2, sigma_S2, S2_average, sigma_S2_average = tract_compute_s2(B0_exp, Ra, Rb, sigma_Ra, sigma_Rb, tau_slow=CO.tau[0], S2_slow=CO.S2[0], tau_int=CO.tau[1], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])
+        CO.S2[1]=S2_average
     else:
-        tau_c, sigma_tau_c, tau_average, sigma_tau_average = tract_compute_tau(omega_N, Ra, Rb, sigma_Ra, sigma_Rb, S2=CO.S2[0], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])    
+        tau_c, sigma_tau_c, tau_average, sigma_tau_average = tract_compute_tau(B0_exp, Ra, Rb, sigma_Ra, sigma_Rb, S2=CO.S2[0], r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1])    
         CO.tau=[tau_average, 1e-11]
     CO.add_ref('fushman')
     R1, R2, nOe = fun_hetrelax_models.R1R2nOe(B0_exp, r=CO.r, Deltasigma=CO.Deltasigma, nuc1=CO.nucs[0], nuc2=CO.nucs[1], func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))
     CO.add_ref('salvi')
     eta_z, eta_xy = fun_hetrelax_models.eta_z_eta_xy(B0_exp, r=CO.r, Deltasigma=CO.Deltasigma, theta=CO.theta, nuc1=CO.nucs[0], nuc2=CO.nucs[1], f_args=(CO.S2, CO.tau))
+    print(f'expected T1 = {1/R1:.3f} s\nexpected T2 = {1/R2:.3f} s\nexpected hetnOe = {nOe:.3f} \nexpected eta_z = {eta_z:.3f}\nexpected eta_xy = {eta_xy:.3f}')
+    print('\n')
+
     if CO.options['plot']:
         values = {'R1': R1, 'R2': R2, 'nOe': nOe, 'eta_z': eta_z, 'eta_xy': eta_xy} 
         if not CO.options['idp']:
@@ -582,7 +641,7 @@ def tract(CO):
             y_ave = S2_average
             yerr_ave = sigma_S2_average
             name = 'S^2'
-        make_plot(CO, xaxis, y, yerr, y_ave, yerr_ave, values, name=name)
+        make_plot(CO, xaxis, y, yerr, y_ave, yerr_ave, Ra, Rb, sigma_Ra, sigma_Rb, values, name=name, idx = idx)
     
     print(textcolor('Use this command to create the lists for your system', 'green'))
-    print(f't1ttune makelist --tau {CO.tau[0]:.2e} {CO.tau[1]:.2e} --S2 {CO.S2[0]:.2f} {CO.S2[1]:.2f} --idp' if CO.options['idp'] else f't1ttune makelist --tau {CO.tau[0]:.2e} --S2 {CO.S2[0]:.2f}')     
+    print(f't1ttune makelists --tau {CO.tau[0]*1e9:.2e} {CO.tau[1]*1e9:.2e} --S2 {CO.S2[0]:.2f} {CO.S2[1]:.2f} --idp' if CO.options['idp'] else f't1ttune makelist --tau {CO.tau[0]*1e9:.2e} --S2 {CO.S2[0]:.2f}')     

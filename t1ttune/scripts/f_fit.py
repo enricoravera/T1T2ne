@@ -139,15 +139,15 @@ def fit_exponential(x, y, multi=1):
     
     param = lmfit.Parameters()
     if multi==1:
-        param.add('k', value=0, min=-5, max=5)
+        param.add('k', value=0, min=-7, max=7)
     if multi==2:
-        param.add('k1', value=0, min=-5, max=5)
-        param.add('k2', value=0, min=-5, max=5)
+        param.add('k1', value=0, min=-7, max=7)
+        param.add('k2', value=0, min=-7, max=7)
         param.add('f1', value=0, min=-5, max=5)  # f1 will be transformed to (0, 1) in the fitting function
     if multi==3:
-        param.add('k1', value=0, min=-5, max=5)
-        param.add('k2', value=0, min=-5, max=5)
-        param.add('k3', value=0, min=-5, max=5)
+        param.add('k1', value=0, min=-7, max=7)
+        param.add('k2', value=0, min=-7, max=7)
+        param.add('k3', value=0, min=-7, max=7)
         param.add('f1', value=0, min=-5, max=5)  # f1 will be transformed to (0, 1) in the fitting function
         param.add('f2', value=0, min=-5, max=5)  # f2 will be transformed to (0, 1-f1) in the fitting function
     minner = lmfit.Minimizer(exponential_ls, param, fcn_args=(x, y), fcn_kws={'multi': multi})
