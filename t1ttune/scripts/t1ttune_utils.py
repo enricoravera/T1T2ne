@@ -429,7 +429,7 @@ class Conf_Optns:
                     if len(parser.nT) != 1:
                         raise ValueError('The --nT option for the setuptract module can only accept one value, corresponding to the number of T1 and T2 increments to be designed. Please provide one value to use the same number of increments for both T1 and T2.')
                     self.nT = [int(parser.nT[0])]
-            elif self.module == 'makelists':
+            elif self.module in ['makelists', 'interactive', 'shuttle']:
                 if parser.nT is None:
                     self.nT = [8, 8]
                 else:
