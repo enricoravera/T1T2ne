@@ -4,8 +4,9 @@ import os
 import socket
 import configparser
 import numpy as np
+import klassez as kz
 
-from . import hydrodynamics_utils, f_findfs
+from . import hydrodynamics_utils, f_findfs, textcolor
 
 
 def config_exists():
@@ -20,10 +21,10 @@ def config_exists():
     """
     findfs_info = f_findfs.find_topspin()
     if not findfs_info["found"]:
-        print("TopSpin does not appear to be installed on this workstation.")
+        print(textcolor("TopSpin does not appear to be installed on this workstation.", "yellow")   )
         return None
     if not findfs_info["spectrometer"]:
-        print("TopSpin does not appear to be installed on a spectrometer workstation.")
+        print(textcolor("TopSpin does not appear to be installed on a spectrometer workstation.", "yellow")   )
         return None
     fspath = findfs_info["install_path"]
     nmrsupath = os.path.join(fspath, 'conf', 'nmrsuperuser')
@@ -520,36 +521,55 @@ class Conf_Optns:
                     self.xred = [self.xred[0], self.xred[1]]
                 else:
                     pass
-        if self.module not in ['tract', 'interactive']:
-            if hasattr(parser, 'B0') and parser.B0 is not None:
-                if len(parser.B0) == 1:
-                    self.B_0 = float(parser.B0[0])
-                else:
-                    raise NotImplementedError('Multiple values for B0 are not supported yet. Please provide one value for the magnetic field strength to be used in the calculations.')
-            elif hasattr(parser, 'Larmor') and parser.Larmor is not None:
-                self.B_0 = float(parser.Larmor[0]) / (42.57747892) # convert from MHz to Tesla using the gyromagnetic ratio of the first nucleus in the list
-            else:
-                self.get_B0(config_p=load_config())
         
-    def get_B0(self, config_p=None):
+        if hasattr(parser, 'B0') and parser.B0 is not None:
+            if len(parser.B0) == 1:
+                self.B_0 = float(parser.B0[0])
+            else:
+                raise NotImplementedError('Multiple values for B0 are not supported yet. Please provide one value for the magnetic field strength to be used in the calculations.')
+        elif hasattr(parser, 'Larmor') and parser.Larmor is not None:
+            self.B_0 = float(parser.Larmor[0]) / (42.57747892) # convert from MHz to Tesla using the gyromagnetic ratio of the first nucleus in the list
+        else:
+            self.get_B0()
+        
+    def get_B0(self):
         """
-        Get the magnetic field value from the config file if it exists, otherwise ask the user to provide it.
+        Get the magnetic field value from the spectrometer uxnmr.info file if it exists, otherwise ask the user to provide it.
         The magnetic field value is stored in the ``B_0`` attribute of the ``CO`` object.
         
         Parameters
         ----------
-        config_p : configparser.ConfigParser, optional
-            The config object containing the parameters. If None, the function will ask the user to provide the magnetic field value. Default is None.
+        None
+            The function does not take any parameters. It checks for the magnetic field value in the spectrometer uxnmr.info file and if it is not found, it prompts the user to input it.
             
         Returns
         -------
         None
             The function updates the ``B_0`` attribute of the ``CO`` object with the magnetic field value in Tesla, either from the config file or from the user input.
         """
-        if config_p is not None:
-            self.B_0 = float(config_p['DEFAULT']['B0'])        
-        if not hasattr(self, 'B_0'):
-            self.B_0 = float(input('Please provide the magnetic field value in Tesla: '))
+
+        findfs_info = f_findfs.find_topspin()
+        if findfs_info["spectrometer"]:
+            fspath = findfs_info["fspath"]
+        else:
+            fspath = None
+            if self.module == 'interactive':
+                print(textcolor("interactive module should be run on a spectrometer workstation. ", "red"))
+        if fspath is None:
+            if hasattr(self, 'B_0') and self.B_0 is not None:
+                return
+            else:
+                self.B_0 = float(input('Please provide the magnetic field value in Tesla: '))        
+                return
+        spect_folder = os.path.join(fspath, "conf", "instr", "spect") # instrument config
+        with open(os.path.join(spect_folder, "uxnmr.info")) as spectfile:
+            spectinfolist = spectfile.readlines()
+            for line in spectinfolist:
+                if "1H-frequency" in line:
+                    larmor_freq = float(line.split(":")[1].strip(" MHz\n"))
+                    break
+        self.B_0 = larmor_freq / kz.sim.gamma["1H"] # in Tesla, calculated from the 1H Larmor frequency
+        return
     
     def get_experiment(self, parser, config_p=None):
         """

@@ -70,23 +70,7 @@ def config(foundpath, basedir=None, hsqcexpno=None, tractexpno=None):
         raise PermissionError('Only the NMR superuser can write the config file. Exiting.')
     else:
         config_p = configparser.ConfigParser()
-        if not os.path.isdir(os.path.join(fspath, "conf", "instr", "spect")):
-            if not os.path.exists(os.path.join(fspath, "conf", "instr", "remote_spect", "uxnmr.info")):
-                raise NameError(f"The provided path {fspath} does not appear to be a valid TopSpin installation on a spectrometer workstation.")
-            else:
-                spect_folder = os.path.join(fspath, "conf", "instr", "remote_spect") # remote instrument config
-        else:
-            spect_folder = os.path.join(fspath, "conf", "instr", "spect") # instrument config
-        with open(os.path.join(spect_folder, "uxnmr.info")) as spectfile:
-            spectinfolist = spectfile.readlines()
-            for line in spectinfolist:
-                if "1H-frequency" in line:
-                    larmor_freq = float(line.split(":")[1].strip(" MHz\n"))
-                    break
-        B_0_config = larmor_freq / kz.sim.gamma["1H"] # in Tesla, calculated from the 1H Larmor frequency
-        config_p['DEFAULT'] = {
-            'B0': B_0_config            
-        }
+
         pathtodataset = input('Please provide the path to a standard dataset to be used as example') or basedir
         if not os.path.isdir(pathtodataset):
             raise ValueError(f"The provided path {pathtodataset} is not a valid directory.")
