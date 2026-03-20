@@ -305,6 +305,7 @@ def tract_fit_Ra_Rb(CO):
     print(f'Found {vdlistpath} to be imported as VDLIST')
     #   Actual loading and storage in an attribute
     vdlist = t1ttune_utils.in_vdlist(vdlistpath)
+    print(f'vdlist loaded: {vdlist}')
     
     idx = np.argmin(np.abs(vdlist))
     

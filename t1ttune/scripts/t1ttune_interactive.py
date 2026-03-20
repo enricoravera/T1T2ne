@@ -69,7 +69,7 @@ def interactive_setup(CO):
     CO.add_ref('Fiorucci')
     CO.add_ref('klassez')    
 
-    CO.get_B0(config_p=t1ttune_utils.load_config())
+    CO.get_B0()
 
     if hasattr(CO, 'tau') and CO.tau is not None:
         CO.add_ref('fushman')

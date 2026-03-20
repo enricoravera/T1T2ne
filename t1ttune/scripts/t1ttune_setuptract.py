@@ -83,6 +83,7 @@ def suggest_tract_vdlist(CO):
     Rb = R2 + eta_xy
     Ra = R2 - eta_xy
     vdlist_TRACT = np.geomspace(2e-5, 2/Rb, num=nT) #geometrically spaced list from 20us to 2*tau_average
+    vdlist_TRACT /= 2
     if CO.options['randomize']:
         random.shuffle(vdlist_TRACT)
     print(textcolor('\nSuggested vdlist for TRACT experiment:', 'blue'))

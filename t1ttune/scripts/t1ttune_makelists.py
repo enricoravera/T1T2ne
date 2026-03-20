@@ -50,7 +50,7 @@ class MakeListsCmd(BaseCommand):
         print('\n')
         print(textcolor('Estimated values for heteronuclear relaxation:\n', 'green', bold=False))
         print(f'expected T1 = {1/R1:.3f} s\nexpected T2 = {1/R2:.3f} s\nexpected hetnOe = {nOe:.3f}')
-        print(textcolor(f'Set the recovery delay for the hetnOe experiment to at least {6/R1:.3f}.\n', 'blue', bold=False))       
+        print(textcolor(f'Set the recovery delay for the hetnOe experiment in the range {4/R1:.3f} - {6/R1:.3f}.\n', 'blue', bold=False))
         create_lists(CO, R1, R2)
         t1ttune_utils.the_end(CO)
         exit()
@@ -119,6 +119,7 @@ def create_lists(CO, R1, R2):
     else:
         CO.T1red = float(input('Enter percent residual signal for the longest delay of the T1 experiment (default 5%): ').strip() or "5")*0.01
         CO.T2red = float(input('Enter percent residual signal for the longest CPMG block of the T2 experiment (default 10%): ').strip() or "10")*0.01        
+    T2red = CO.T2red
     T1max = -np.log(CO.T1red)/R1
     T2max = -np.log(CO.T2red)/R2
     nT1 = CO.nT[0]
@@ -127,9 +128,11 @@ def create_lists(CO, R1, R2):
     else:
         nT2 = CO.nT[1]
     if T2max > 0.250:
-        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {CO.T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
+        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
         print('Setting the maximum CPMG block to to 250ms')
         T2max = 0.250
+        T2red = 1 - np.exp(-R2*T2max)
+        print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
         if CO.options['large']:
             print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
             CO.options['large'] = False
@@ -143,7 +146,7 @@ def create_lists(CO, R1, R2):
     if CO.options['large']:
         d31 = d31/2
     else:
-        if -np.log(1-(1-CO.T2red)*(1/(nT2-1))) < d31*1e-6*R2:
+        if -np.log(1-(1-T2red)*(1/(nT2-1))) < d31*1e-6*R2:
             print(textcolor('Warning', 'yellow') + f': the second CPMG point in logscale would be a repetition of the first, switching to "large" sequence') #giallo
             d31 = d31/2
     if CO.options['small']:
@@ -159,7 +162,7 @@ def create_lists(CO, R1, R2):
     #print(f'd21 = {d21} us, p30 = {p30} us, cpmgblock = {d31} us')
     print('\n')
     print(textcolor(f'The longest delay for the T1 experiment for a residual signal of {CO.T1red*100:.0f}% should be {T1max:.2f} s.', 'default', bold=True)) #grassetto
-    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {CO.T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
+    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
     print(textcolor('Check if this is too long for your equipment before running the experiment', 'red')) #rosso
     if nT2 > nmax:
         print(textcolor(f'Warning: the number of increments you chose for the CPMG experiment is {nT2}, which is more than the recommended number of loops {nmax} for a longest CPMG block of {T2max:.2f} s. The list will contain duplicates.', 'yellow')) #giallo
@@ -181,7 +184,7 @@ def create_lists(CO, R1, R2):
     t1ttune_utils.out_vdlist(vdlist_T1)
     #create the vclist for the 15N T2 experiment
     if logscale:
-        vclist_T2 = [-1/R2 * np.log(1-(1-CO.T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]
+        vclist_T2 = [-1/R2 * np.log(1-(1-T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]
         vclist_T2 = np.array(vclist_T2, dtype=np.uint64) #convert to np.uint64
     else:
         vclist_T2 = np.linspace(0,nmax, num=int(nT2), dtype=np.uint64) #linearly spaced list from 0 to nmax
