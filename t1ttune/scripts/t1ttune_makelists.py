@@ -134,8 +134,8 @@ def create_lists(CO, R1, R2):
             print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
             CO.options['large'] = False
     if CO.options['small']:
-        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 600u', 'blue'))
-        d21 = 600
+        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
+        d21 = 750
     else:
         d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
     p30 = float(input('Enter the p30 value in microseconds (default 80): ').strip() or "80")
@@ -168,6 +168,11 @@ def create_lists(CO, R1, R2):
         vdlist_T1 = [2e-5 - 1/R1 * np.log(1-(1-CO.T1red)*i/(nT1-1)) for i in range(nT1)] #logarithmically spaced list from 20u to to T1max
     else:
         vdlist_T1 = np.linspace(2e-5, T1max, num=nT1) #linearly spaced list from 20u to to T1max
+    #round to multiples of 10 ms or 20 ms depending on the --idp option
+    if CO.options['idp']:
+        vdlist_T1 = [round(x*1e3/20)*20/1e3 for x in vdlist_T1] #round to multiples of 20 ms
+    else:
+        vdlist_T1 = [round(x*1e3/10)*10/1e3 for x in vdlist_T1] #round to multiples of 10 ms
     print(textcolor('\nvdlist for T1 experiment:', 'blue'))
     print('-'*25)
     if CO.options['randomize']:
