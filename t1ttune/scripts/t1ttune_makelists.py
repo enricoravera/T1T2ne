@@ -35,6 +35,7 @@ class MakeListsCmd(BaseCommand):
         parser.add_argument('--Deltasigma', type=float, default=-160, help='The chemical shift anisotropy of the 15N nucleus in ppm. Default is -160 ppm.')
         parser.add_argument('--theta', type=float, default=17, help='The angle between the 1H-15N bond and the principal axis of the CSA tensor in degrees. Default is 17 degrees.')
         parser.add_argument('--B0', nargs='*', type=float, help='The magnetic field strength in Tesla. If not provided, the script will try to load it from the config file. If it is not found in the config file, an error will be raised.')
+        parser.add_argument('--Larmor', nargs=1, type=float, help='The Larmor frequency in MHz, alternative to --B0.')
         parser.add_argument('--nucs', nargs='*', default=['1H', '15N'], help='The nuclei to use for the calculation of the relaxation rates. Default is 1H and 15N.')
         parser.add_argument('--logscale', action='store_true', help='Whether to create the lists in logarithmic scale. If True, the protocol suggested by F. Ferrage is used. Default is False.')
         parser.add_argument('--large', action='store_true', help='Whether to create the lists for the "large" sequence, which is optimized for short T2 times. If True, the d21 value is set to 450 us and only 8 cycles per CPMG block are used instead of 16. Default is False.')
@@ -52,6 +53,7 @@ class MakeListsCmd(BaseCommand):
         print(textcolor(f'Set the recovery delay for the hetnOe experiment to at least {6/R1:.3f}.\n', 'blue', bold=False))       
         create_lists(CO, R1, R2)
         t1ttune_utils.the_end(CO)
+        exit()
         
 def create_lists(CO, R1, R2):
     """
@@ -132,8 +134,8 @@ def create_lists(CO, R1, R2):
             print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
             CO.options['large'] = False
     if CO.options['small']:
-        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 600u', 'blue'))
-        d21 = 600
+        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
+        d21 = 750
     else:
         d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
     p30 = float(input('Enter the p30 value in microseconds (default 80): ').strip() or "80")
@@ -166,6 +168,12 @@ def create_lists(CO, R1, R2):
         vdlist_T1 = [2e-5 - 1/R1 * np.log(1-(1-CO.T1red)*i/(nT1-1)) for i in range(nT1)] #logarithmically spaced list from 20u to to T1max
     else:
         vdlist_T1 = np.linspace(2e-5, T1max, num=nT1) #linearly spaced list from 20u to to T1max
+    #round to multiples of 10 ms or 20 ms depending on the --idp option
+    if CO.options['idp']:
+        vdlist_T1 = [round(x*1e3/20)*20/1e3 for x in vdlist_T1] #round to multiples of 20 ms
+    else:
+        vdlist_T1 = [round(x*1e3/10)*10/1e3 for x in vdlist_T1] #round to multiples of 10 ms
+    vdlist_T1[0] = 2e-5 #set the first point to 20 us
     print(textcolor('\nvdlist for T1 experiment:', 'blue'))
     print('-'*25)
     if CO.options['randomize']:
