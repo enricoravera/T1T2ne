@@ -173,6 +173,7 @@ def create_lists(CO, R1, R2):
         vdlist_T1 = [round(x*1e3/20)*20/1e3 for x in vdlist_T1] #round to multiples of 20 ms
     else:
         vdlist_T1 = [round(x*1e3/10)*10/1e3 for x in vdlist_T1] #round to multiples of 10 ms
+    vdlist_T1[0] = 2e-5 #set the first point to 20 us
     print(textcolor('\nvdlist for T1 experiment:', 'blue'))
     print('-'*25)
     if CO.options['randomize']:
