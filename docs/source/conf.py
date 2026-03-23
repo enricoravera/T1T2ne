@@ -15,7 +15,7 @@ from pathlib import Path
 project = 'T1T2ne'
 copyright = '2026, Francesco Bruno, Letizia Fiorucci, Enrico Ravera'
 author = 'Francesco Bruno, Letizia Fiorucci, Enrico Ravera'
-release = '0.0.2'
+release = "0.0.2.dev1"
 
 package_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(package_path))  # Adjust the path to include the parent directory
@@ -71,14 +71,14 @@ latex_paper_size = 'letter'
 #    document class [howto/manual])
 
 latex_documents = [
-    ('index', 't1ttune.tex', 'T1Ttune Documentation',
+    ('index', 't1t2ne.tex', 'T1T2ne Documentation',
      'Enrico Ravera, Francesco Bruno, and Letizia Fiorucci', 'manual'),
 ]
 
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-latex_logo = None
+latex_logo = str(Path(__file__).parent / '_static' / 't1t2ne_logo.png')
 
 # Use Unicode aware LaTeX engine
 latex_engine = 'pdflatex'  # or 'lualatex'
