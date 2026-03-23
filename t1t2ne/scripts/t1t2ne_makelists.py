@@ -5,7 +5,7 @@ import random
 
 from .base import BaseCommand
 from .textcolor import textcolor
-from . import t1ttune_utils, fun_hetrelax_models
+from . import t1t2ne_utils, fun_hetrelax_models
 
 class MakeListsCmd(BaseCommand):
     """Make lists of values for the protein dynamics experiments"""
@@ -44,7 +44,7 @@ class MakeListsCmd(BaseCommand):
     @staticmethod
     def run(args):
         """Runs the MakeLists command."""
-        CO = t1ttune_utils.Conf_Optns(args)
+        CO = t1t2ne_utils.Conf_Optns(args)
         R1, R2, nOe = fun_hetrelax_models.R1R2nOe(CO.B_0, r=CO.r, nuc1=CO.nucs[0], nuc2=CO.nucs[1], Deltasigma=CO.Deltasigma, func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))
         CO.add_ref('fushman')
         print('\n')
@@ -52,7 +52,7 @@ class MakeListsCmd(BaseCommand):
         print(f'expected T1 = {1/R1:.3f} s\nexpected T2 = {1/R2:.3f} s\nexpected hetnOe = {nOe:.3f}')
         print(textcolor(f'Set the recovery delay for the hetnOe experiment in the range {4/R1:.3f} - {6/R1:.3f}.\n', 'blue', bold=False))
         create_lists(CO, R1, R2)
-        t1ttune_utils.the_end(CO)
+        t1t2ne_utils.the_end(CO)
         exit()
         
 def create_lists(CO, R1, R2):
@@ -181,7 +181,7 @@ def create_lists(CO, R1, R2):
     print('-'*25)
     if CO.options['randomize']:
         random.shuffle(vdlist_T1)
-    t1ttune_utils.out_vdlist(vdlist_T1)
+    t1t2ne_utils.out_vdlist(vdlist_T1)
     #create the vclist for the 15N T2 experiment
     if logscale:
         vclist_T2 = [-1/R2 * np.log(1-(1-T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]

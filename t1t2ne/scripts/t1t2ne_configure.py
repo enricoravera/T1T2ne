@@ -7,7 +7,7 @@ import argparse
 
 from .base import BaseCommand
 
-from .t1ttune_utils import istract
+from .t1t2ne_utils import istract
 from . import f_findfs
 
 

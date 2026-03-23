@@ -5,7 +5,7 @@ import argparse
 import klassez as kz
 import os
 
-from . import t1ttune_utils, f_fit, hydrodynamics_utils
+from . import t1t2ne_utils, f_fit, hydrodynamics_utils
 
 from .base import BaseCommand
 from .textcolor import textcolor
@@ -38,12 +38,12 @@ class NSCmd(BaseCommand):
         parser.add_argument('--theta', type=float, default=17, help='The angle between the 1H-15N bond and the principal axis of the CSA tensor in degrees. Default is 17 degrees.')
     @staticmethod
     def run(args: argparse.Namespace) -> None:
-        CO = t1ttune_utils.Conf_Optns(args, module='NS')
-        CO.get_B0(config_p=t1ttune_utils.load_config())
-        CO.get_experiments(config_p=t1ttune_utils.load_config())
+        CO = t1t2ne_utils.Conf_Optns(args, module='NS')
+        CO.get_B0(config_p=t1t2ne_utils.load_config())
+        CO.get_experiments(config_p=t1t2ne_utils.load_config())
         SNR = estimate_snr(args)
         suggest_scans(CO, SNR)
-        t1ttune_utils.the_end(CO)
+        t1t2ne_utils.the_end(CO)
         
         
 def estimate_snr(CO):
@@ -136,12 +136,12 @@ def estimate_snr(CO):
         if CO.options['phase']:
             trace.adjph()
         signalregion = kz.fit.get_region(trace.ppm, trace.r, fig_title='Signal region for SNR estimation')
-        signal = t1ttune_utils.extract_regions_from_trace(trace.ppm, trace.r, signalregion)
+        signal = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.r, signalregion)
         noiseregion = kz.fit.get_region(trace.ppm, trace.r, fig_title='Noise region for SNR estimation')        
-        noise = t1ttune_utils.extract_regions_from_trace(trace.ppm, trace.r, noiseregion)
+        noise = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.r, noiseregion)
         ntr = S_hsqc.acqus['TD1']
         ns = S_hsqc.ngdic['acqus']['NS']
-        x = t1ttune_utils.extract_regions_from_trace(trace.ppm, trace.ppm, signalregion)
+        x = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.ppm, signalregion)
     
     else:
         path = os.path.join(CO.basedir, f'{CO.tract}')
@@ -149,18 +149,18 @@ def estimate_snr(CO):
 
     #load the dataset and check if it's a TRACT experiment
         S = kz.Pseudo_2D(path)
-        if not t1ttune_utils.istract(S):
+        if not t1t2ne_utils.istract(S):
             raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
         Sa, Sb = split_tract(S)
         if CO.options['phase']:
             Sb.adjph(ref=0)
         signalregion = kz.fit.get_region(Sb.ppm_f2, Sb.rr[0], fig_title='Signal region for SNR estimation')        
         noiseregion = kz.fit.get_region(Sb.ppm_f2, Sb.rr[0], fig_title='Noise region for SNR estimation')
-        noise = t1ttune_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.rr[0], noiseregion)
-        signal = t1ttune_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.rr[0], signalregion)
+        noise = t1t2ne_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.rr[0], noiseregion)
+        signal = t1t2ne_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.rr[0], signalregion)
         ntr = float(input('Enter the number of transients (or press enter to use the default value 128): ').strip() or 128)
         ns = Sb.ngdic['acqus']['NS']
-        x = t1ttune_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.ppm_f2, signalregion)        
+        x = t1t2ne_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.ppm_f2, signalregion)        
     
     CO.add_ref('klassez')    
 

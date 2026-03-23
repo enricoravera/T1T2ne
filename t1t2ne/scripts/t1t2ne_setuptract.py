@@ -4,7 +4,7 @@ import numpy as np
 
 from .base import BaseCommand
 from .textcolor import textcolor
-from . import t1ttune_utils, fun_hetrelax_models
+from . import t1t2ne_utils, fun_hetrelax_models
 import random
 
 class SetupTractCmd(BaseCommand):
@@ -39,10 +39,10 @@ class SetupTractCmd(BaseCommand):
 
     @staticmethod
     def run(args):
-        CO = t1ttune_utils.Conf_Optns(args, module='setuptract')
+        CO = t1t2ne_utils.Conf_Optns(args, module='setuptract')
  
         suggest_tract_vdlist(CO)
-        t1ttune_utils.the_end(CO)    
+        t1t2ne_utils.the_end(CO)    
         exit()        
 
 def suggest_tract_vdlist(CO):
@@ -88,5 +88,5 @@ def suggest_tract_vdlist(CO):
         random.shuffle(vdlist_TRACT)
     print(textcolor('\nSuggested vdlist for TRACT experiment:', 'blue'))
     print('-'*38)
-    t1ttune_utils.out_vdlist(vdlist_TRACT)
+    t1t2ne_utils.out_vdlist(vdlist_TRACT)
     

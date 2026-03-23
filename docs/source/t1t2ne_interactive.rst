@@ -5,7 +5,7 @@ T1TTUNE_INTERACTIVE module
 .. contents::
    :local:
 
-.. automodule:: t1ttune.scripts.t1ttune_interactive
+.. automodule:: t1t2ne.scripts.t1t2ne_interactive
    :members:
    :undoc-members:
    :show-inheritance:

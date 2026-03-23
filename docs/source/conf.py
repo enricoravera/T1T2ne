@@ -12,10 +12,10 @@ from pathlib import Path
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'T1Ttune'
+project = 'T1T2ne'
 copyright = '2026, Francesco Bruno, Letizia Fiorucci, Enrico Ravera'
 author = 'Francesco Bruno, Letizia Fiorucci, Enrico Ravera'
-release = '0.0.1'
+release = '0.0.2'
 
 package_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(package_path))  # Adjust the path to include the parent directory

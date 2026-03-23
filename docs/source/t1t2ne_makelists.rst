@@ -5,7 +5,7 @@ T1TTUNE_MAKELISTS module
 .. contents::
    :local:
 
-.. automodule:: t1ttune.scripts.t1ttune_makelists
+.. automodule:: t1t2ne.scripts.t1t2ne_makelists
    :members:
    :undoc-members:
    :show-inheritance:

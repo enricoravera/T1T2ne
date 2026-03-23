@@ -5,7 +5,7 @@ The software is available on PyPI and thus installable through `pip`:
 
 ::
 
-    pip install t1ttune
+    pip install t1t2ne
 
 Alternatively, the software can be downloaded and built directly from the `GitHub repository`_
 `(recommended for development and testing)` by typing:

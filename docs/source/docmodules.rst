@@ -1,14 +1,14 @@
 .. toctree::
    :maxdepth: 2
 
-   t1ttune_configure 
-   t1ttune_makelists
-   t1ttune_interactive
-   t1ttune_ns
-   t1ttune_setuptract
-   t1ttune_tract
-   t1ttune_solventpre
-   t1ttune_utils     
+   t1t2ne_configure 
+   t1t2ne_makelists
+   t1t2ne_interactive
+   t1t2ne_ns
+   t1t2ne_setuptract
+   t1t2ne_tract
+   t1t2ne_solventpre
+   t1t2ne_utils     
    f_fit
    fun_hetrelax_models
    f_ParaMeters_relax

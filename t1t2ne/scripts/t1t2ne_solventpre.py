@@ -4,7 +4,7 @@ import numpy as np
 
 from .base import BaseCommand
 from .textcolor import textcolor
-from . import t1ttune_utils, f_ParaMeters_relax
+from . import t1t2ne_utils, f_ParaMeters_relax
 import klassez as kz
 import random
 
@@ -37,10 +37,10 @@ class SPREListsCmd(BaseCommand):
         parser.add_argument('--g', type=float, help='The electron g-factor. If not provided, a default value of None will be used.')
     @staticmethod
     def run(args):
-        CO = t1ttune_utils.Conf_Optns(args, module='solventpre')
+        CO = t1t2ne_utils.Conf_Optns(args, module='solventpre')
  
         solventpre(CO)
-        t1ttune_utils.the_end(CO)    
+        t1t2ne_utils.the_end(CO)    
         exit()        
 
 def solventpre(CO):
@@ -115,7 +115,7 @@ def solventpre(CO):
         random.shuffle(vdlist_PRE)
     print(textcolor('\nSuggested vdlist for T1 experiment:', 'blue'))
     print('-'*38)
-    t1ttune_utils.out_vdlist(vdlist_PRE)
+    t1t2ne_utils.out_vdlist(vdlist_PRE)
     if nT2 == 2:
         print(textcolor(f"Optimal Tb-Ta difference for optimizing Gamma2 measurement: {1.15/(R2):.5f} s", "blue"))
     else:
@@ -124,5 +124,5 @@ def solventpre(CO):
             random.shuffle(vdlist_PRE_R2)
         print(textcolor('\nSuggested vdlist for R2 experiment:', 'blue'))
         print('-'*38)
-        t1ttune_utils.out_vdlist(vdlist_PRE_R2) 
+        t1t2ne_utils.out_vdlist(vdlist_PRE_R2) 
     

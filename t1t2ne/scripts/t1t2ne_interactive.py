@@ -6,7 +6,7 @@ import numpy as np
 from .base import BaseCommand
 from .textcolor import textcolor
 import klassez as kz
-from . import t1ttune_utils, fun_hetrelax_models, f_findfs
+from . import t1t2ne_utils, fun_hetrelax_models, f_findfs
 import random
 
 class InteractiveCmd(BaseCommand):
@@ -45,10 +45,10 @@ class InteractiveCmd(BaseCommand):
 
     @staticmethod
     def run(args):
-        CO = t1ttune_utils.Conf_Optns(args, module='interactive')
+        CO = t1t2ne_utils.Conf_Optns(args, module='interactive')
  
         interactive_setup(CO)
-        t1ttune_utils.the_end(CO)    
+        t1t2ne_utils.the_end(CO)    
         exit()        
         
 def interactive_setup(CO):
@@ -104,7 +104,7 @@ def interactive_setup(CO):
         info = f_findfs.find_topspin()
         if not info['found'] or not info['spectrometer']:
             textcolor('TopSpin spectrometer installation not found. Please make sure you are running this script on the spectrometer and that TopSpin is properly installed.', 'red', bold=True)
-            t1ttune_utils.the_end(CO) 
+            t1t2ne_utils.the_end(CO) 
         CO.basedir = input('Please enter the base directory for the experiment (default is current directory): ') or '.'
     
         
@@ -136,7 +136,7 @@ def interactive_setup(CO):
     whilecontrol = True
     iteration = 0
     while whilecontrol:
-        print(textcolor(f'To achieve a reduction of the signal intensity of about {(1-CO.T1red)*100:.0f}%, try setting d7 to ' + t1ttune_utils.f4(T1_30), 'blue'))
+        print(textcolor(f'To achieve a reduction of the signal intensity of about {(1-CO.T1red)*100:.0f}%, try setting d7 to ' + t1t2ne_utils.f4(T1_30), 'blue'))
         expno = input('Please enter the experiment number for the T1 experiment once it is done (default is 2): ') or '2'
         path_t1 = os.path.join(CO.basedir, expno)
         if not os.path.exists(path_t1):
@@ -175,7 +175,7 @@ def interactive_setup(CO):
     print('-'*25)
     if CO.options['randomize']:
         random.shuffle(vdlist_T1)
-    t1ttune_utils.out_vdlist(vdlist_T1)
+    t1t2ne_utils.out_vdlist(vdlist_T1)
 
 
     print('\nStarting the interactive setup of the T2 experiment...')

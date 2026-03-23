@@ -13,5 +13,5 @@ The package includes modules for computing:
             
 """
 
-__version__ = "0.0.1a"
+__version__ = "0.0.2.dev1"
 __author__ = "Enrico Ravera, Francesco Bruno, Letizia Fiorucci"

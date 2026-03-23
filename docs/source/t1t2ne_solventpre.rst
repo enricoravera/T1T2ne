@@ -1,11 +1,11 @@
-T1TTUNE_SETUPTRACT module
+T1TTUNE_SOLVENTPRE module
 =========================
 
 
 .. contents::
    :local:
 
-.. automodule:: t1ttune.scripts.t1ttune_setuptract
+.. automodule:: t1t2ne.scripts.t1t2ne_solventpre
    :members:
    :undoc-members:
    :show-inheritance:

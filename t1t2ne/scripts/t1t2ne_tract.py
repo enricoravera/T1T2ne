@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import MultiCursor
 
 from .base import BaseCommand
-from . import f_fit, t1ttune_utils, fun_hetrelax_models
+from . import f_fit, t1t2ne_utils, fun_hetrelax_models
 
 class TractCmd(BaseCommand):
     SHORT_HELP = "Fit a TRACT experiment to extract the average tau_c of the system"
@@ -47,9 +47,9 @@ class TractCmd(BaseCommand):
 
     @staticmethod
     def run(args: argparse.Namespace) -> None:
-        CO = t1ttune_utils.Conf_Optns(args, module='tract')
+        CO = t1t2ne_utils.Conf_Optns(args, module='tract')
         tract(CO)
-        t1ttune_utils.the_end(CO)
+        t1t2ne_utils.the_end(CO)
         
 def filter_data(y, window_length=5, polyorder=3):
     """Apply a Savitzky-Golay filter to the data y with the specified window length and polynomial order.
@@ -304,7 +304,7 @@ def tract_fit_Ra_Rb(CO):
     #   Print a notification
     print(f'Found {vdlistpath} to be imported as VDLIST')
     #   Actual loading and storage in an attribute
-    vdlist = t1ttune_utils.in_vdlist(vdlistpath)
+    vdlist = t1t2ne_utils.in_vdlist(vdlistpath)
     print(f'vdlist loaded: {vdlist}')
     
     idx = np.argmin(np.abs(vdlist))
@@ -320,7 +320,7 @@ def tract_fit_Ra_Rb(CO):
 
     #load the dataset and check if it's a TRACT experiment
     S = kz.Pseudo_2D(path)
-    if not t1ttune_utils.istract(S):
+    if not t1t2ne_utils.istract(S):
         raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
     
     #splitcomb-like operation to separate the two interleaved datasets (TROSY and ANTITROSY)
@@ -645,4 +645,4 @@ def tract(CO):
         make_plot(CO, xaxis, y, yerr, y_ave, yerr_ave, Ra, Rb, sigma_Ra, sigma_Rb, values, name=name, idx = idx)
     
     print(textcolor('Use this command to create the lists for your system', 'green'))
-    print(f't1ttune makelists --tau {CO.tau[0]*1e9:.2e} {CO.tau[1]*1e9:.2e} --S2 {CO.S2[0]:.2f} {CO.S2[1]:.2f} --idp' if CO.options['idp'] else f't1ttune makelist --tau {CO.tau[0]*1e9:.2e} --S2 {CO.S2[0]:.2f}')     
+    print(f't1t2ne makelists --tau {CO.tau[0]*1e9:.2e} {CO.tau[1]*1e9:.2e} --S2 {CO.S2[0]:.2f} {CO.S2[1]:.2f} --idp' if CO.options['idp'] else f't1t2ne makelist --tau {CO.tau[0]*1e9:.2e} --S2 {CO.S2[0]:.2f}')     
