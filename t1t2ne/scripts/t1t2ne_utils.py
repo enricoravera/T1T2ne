@@ -634,7 +634,10 @@ class Conf_Optns:
         elif hasattr(parser, 'Larmor') and parser.Larmor is not None:
             self.B_0 = float(parser.Larmor[0]) / (42.57747892) # convert from MHz to Tesla using the gyromagnetic ratio of the first nucleus in the list
         else:
-            self.get_B0()
+            if self.module in ['tract', 'interactive']:
+                pass
+            else:
+                self.get_B0()
         
     def get_B0(self):
         """

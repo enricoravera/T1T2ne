@@ -9,7 +9,7 @@ from .scripts.__init__ import registry
 def main():
     # Top-level parser — mostra i sottocomandi disponibili nell'help
     parser = argparse.ArgumentParser(
-        prog="t1ttune",
+        prog="t1t2ne",
         description="Main program. Select a subcommand to start.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_build_commands_epilog(),
@@ -47,5 +47,5 @@ def _build_commands_epilog() -> str:
     for name, cmd in registry.items():
         lines.append(f"  {name:<12} {cmd.SHORT_HELP}")
     lines.append("")
-    lines.append("Use 't1ttune <command> --help' for details on each command.")
+    lines.append("Use 't1t2ne <command> --help' for details on each command.")
     return "\n".join(lines)

@@ -300,6 +300,9 @@ def tract_fit_Ra_Rb(CO):
     # find vdlist in path
     file = os.listdir(os.path.join(path, 'lists', 'vd'))[0]
     #   Connect the name of the file to the path
+    S = kz.Pseudo_2D(path)
+    if not t1t2ne_utils.istract(S):
+        raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
     vdlistpath = os.path.join(path, 'lists', 'vd', file)
     #   Print a notification
     print(f'Found {vdlistpath} to be imported as VDLIST')
@@ -319,10 +322,9 @@ def tract_fit_Ra_Rb(CO):
         slw = CO.options['slw']
 
     #load the dataset and check if it's a TRACT experiment
-    S = kz.Pseudo_2D(path)
-    if not t1t2ne_utils.istract(S):
-        raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
-    
+
+    CO.B0 = S.acqus['SFO1'] / kz.misc.gamma(CO.options['nucs'][0])
+    print(f'Magnetic field strength: {CO.B0:.2f} T')
     #splitcomb-like operation to separate the two interleaved datasets (TROSY and ANTITROSY)
     S.fid = np.reshape(S.fid.flatten(), (2*S.fid.shape[0], -1))
     Sa = deepcopy(S)
