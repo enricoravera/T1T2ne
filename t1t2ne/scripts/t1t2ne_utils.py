@@ -678,7 +678,7 @@ class Conf_Optns:
 
         findfs_info = f_findfs.find_topspin()
         if findfs_info["spectrometer"]:
-            fspath = findfs_info["fspath"]
+            fspath = findfs_info["install_path"]
         else:
             fspath = None
             if self.module == 'interactive':
