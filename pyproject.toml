@@ -36,5 +36,5 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.scripts]
-t1ttune = "t1t2ne.cli:main"
+t1t2ne = "t1t2ne.cli:main"
 
