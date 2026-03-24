@@ -82,7 +82,7 @@ def suggest_tract_vdlist(CO):
     eta_z, eta_xy = fun_hetrelax_models.eta_z_eta_xy(CO.B_0, r=CO.r, nuc1=CO.nucs[0], nuc2=CO.nucs[1], Deltasigma=CO.Deltasigma, theta=CO.theta, func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))
     Rb = R2 + eta_xy
     Ra = R2 - eta_xy
-    vdlist_TRACT = np.geomspace(2e-5, 2/Rb, num=nT) #geometrically spaced list from 20us to 2*tau_average
+    vdlist_TRACT = np.geomspace(2e-5, 2/Ra, num=nT) #geometrically spaced list from 20us to 2*tau_average
     vdlist_TRACT /= 2
     if CO.options['randomize']:
         random.shuffle(vdlist_TRACT)
