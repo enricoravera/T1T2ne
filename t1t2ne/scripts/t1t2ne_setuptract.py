@@ -1,11 +1,13 @@
 #! /usr/bin/env python3
 
+from unittest import result
 import numpy as np
 
 from .base import BaseCommand
 from .textcolor import textcolor
 from . import t1t2ne_utils, fun_hetrelax_models
 import random
+from scipy.optimize import differential_evolution
 
 class SetupTractCmd(BaseCommand):
     SHORT_HELP = "Setup the vdlist for a TRACT experiment"
@@ -44,6 +46,23 @@ class SetupTractCmd(BaseCommand):
         suggest_tract_vdlist(CO)
         t1t2ne_utils.the_end(CO)    
         exit()        
+        
+
+
+
+def d_optimal_criterion(t, lam1, lam2):
+    """Returns -log det(FIM); minimize this."""
+    t = np.asarray(t)
+    F11 = np.sum(t**2 * np.exp(-2 * lam1 * t))
+    F22 = np.sum(t**2 * np.exp(-2 * lam2 * t))
+    F12 = np.sum(t**2 * np.exp(-(lam1 + lam2) * t))
+    return -(F11 * F22 - F12**2)          # negative det (we minimise)
+
+
+def decode(u, t_max, n, min_gap):
+    """Map unconstrained u in [0,1]^n to sorted times with min_gap enforced."""
+    gaps = min_gap + u * (t_max - n * min_gap) / n  # each gap >= min_gap
+    return np.cumsum(gaps)
 
 def suggest_tract_vdlist(CO):
     r"""
@@ -82,7 +101,24 @@ def suggest_tract_vdlist(CO):
     eta_z, eta_xy = fun_hetrelax_models.eta_z_eta_xy(CO.B_0, r=CO.r, nuc1=CO.nucs[0], nuc2=CO.nucs[1], Deltasigma=CO.Deltasigma, theta=CO.theta, func=fun_hetrelax_models.LS_iso, f_args=(CO.S2, CO.tau))
     Rb = R2 + eta_xy
     Ra = R2 - eta_xy
-    vdlist_TRACT = np.geomspace(2e-5, 2/Ra, num=nT) #geometrically spaced list from 20us to 2*tau_average
+
+    print(textcolor('\nEstimated relaxation rates:', 'blue'))
+    print(f'Ra:  {Ra:.2f} s^-1')
+    print(f'Rb:  {Rb:.2f} s^-1')
+
+
+    t_max = 5.0 / min(Ra, Rb)            # search up to 5 time constants
+    min_gap = t_max / (3 * (nT-1))           # minimum gap to ensure we can fit nT points in [0, t_max]
+    bounds_u = [(0, 1)] * (nT-1)
+    result = differential_evolution(
+        lambda u: d_optimal_criterion(decode(u, t_max, nT-1, min_gap), Ra, Rb),
+        bounds_u, seed=0, tol=1e-12, maxiter=10000, popsize=20
+    )
+    t_opt = decode(result.x, t_max, nT-1, min_gap)
+    print(f"Optimal sample times: {np.round(t_opt, 4)}")
+
+
+    vdlist_TRACT = np.array([2e-5] + list(t_opt))
     vdlist_TRACT /= 2
     if CO.options['randomize']:
         random.shuffle(vdlist_TRACT)
