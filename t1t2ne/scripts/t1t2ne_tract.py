@@ -330,7 +330,7 @@ def tract_fit_Ra_Rb(CO):
     CO.B0 = S.acqus['SFO1'] / kz.sim.gamma[CO.nucs[0]]
     print(f'Magnetic field strength: {CO.B0:.2f} T')
     #splitcomb-like operation to separate the two interleaved datasets (TROSY and ANTITROSY)
-    S.fid = np.reshape(S.fid.flatten(), (2*S.fid.shape[0], -1))
+    #S.fid = np.reshape(S.fid.flatten(), (2*S.fid.shape[0], -1))
     Sa = deepcopy(S)
     Sb = deepcopy(S)
     Sb.fid = S.fid[::2]
@@ -350,16 +350,20 @@ def tract_fit_Ra_Rb(CO):
         # Zerofill to twice the size
         s.procs['zf'] = 2 * s.fid.shape[-1]
         # Apply and do FT
+        if phase:
+            s.procs['p0'] = 0
+            s.procs['p1'] = 0
         s.process()
 
         # Remove digital filter
         s.pknl()
         # Phase the spectrum
         if phase:
+
             if s == Sa:
                 s.adjph()
             else:
-                s.adjph(p0=Sa.procs['p0'], p1=Sa.procs['p1'], pv=Sa.procs['pv'])
+                s.adjph(p0=Sa.procs['p0'], p1=Sa.procs['p1'], pv=Sa.procs['pv'], update=False)
         # Qfil the solvent peak
         s.acqus['FnMODE'] = 'No'
         if s==Sa:
@@ -381,7 +385,7 @@ def tract_fit_Ra_Rb(CO):
         filenames = 's_b', 's_a'
 
     #       Integrals
-        for k, (filename, s) in enumerate(zip(filenames, [Sb, Sa])):
+        for k, (filename, s) in enumerate(zip(filenames, [Sa, Sb])):
             if k == 0:    # => TROSY component
                 if not readints:       # compute the integrals  
                     s.integrate(filename=filename)
@@ -389,7 +393,7 @@ def tract_fit_Ra_Rb(CO):
                     s.read_integrals(filename=f'{filename}.igrl')
             else:       # => ANTITROSY component
                 # Get the integration regions from the TROSY spectrum
-                limits = kz.misc.key_to_limits(list(Sb.integrals.keys()))
+                limits = kz.misc.key_to_limits(list(Sa.integrals.keys()))
                 if not readints:       # integrate in the same regions of the TROSY
                     s.integrate(filename=filename, lims=limits)
                 else:       # read an integrals file
@@ -411,7 +415,7 @@ def tract_fit_Ra_Rb(CO):
     else:
         xaxis = []
         if selectregion:
-            signalregion = kz.fit.get_region(Sb.ppm_f2, Sb.rr[0])
+            signalregion = kz.fit.get_region(Sa.ppm_f2, Sa.rr[0])
         else:
             if CO.options['idp']:
                 signalregion = [[8.6, 7.4]]
@@ -420,7 +424,7 @@ def tract_fit_Ra_Rb(CO):
         # Sb.strip(signalregion)
         # Sa.strip(signalregion)
         for sreg in signalregion:
-            start, end = [kz.misc.ppmfind(Sb.ppm_f2, w)[0] for w in sreg]
+            start, end = [kz.misc.ppmfind(Sa.ppm_f2, w)[0] for w in sreg]
             for i in range(start, end):
                 Rb.append(f_fit.fit_exponential(vdlist, Sb.rr[:, i], multi=1).params['k'].value)
                 Ra.append(f_fit.fit_exponential(vdlist, Sa.rr[:, i], multi=1).params['k'].value)
