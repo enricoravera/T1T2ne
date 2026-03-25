@@ -254,7 +254,7 @@ def interactive_setup(CO):
     R2ave = R2
     while whilecontrol:
         T2red_30 = max(1 - np.exp(-R2ave*l1_30*d31*1e-6), T2red_max)
-        print(textcolor(f'To achieve a reduction of the signal intensity of about {T2red_30*100:.0f}%, try setting l31 to {l1_30:.0f}'))
+        print(textcolor(f'To achieve a reduction of the signal intensity of about {T2red_30*100:.0f}%, try setting l31 to {l1_30:.0f}', 'blue'))
         expno = input('Please enter the experiment number for the T2 experiment once it is done (default is 2): ') or '2'
         path_t2 = os.path.join(CO.basedir, expno)
         if not os.path.exists(path_t2):

@@ -13,12 +13,13 @@ To get more information on a specific subcommand, you can run:
     t1t2ne <subcommand> --help
 
 The following subcommands are available:
--   ``interactive``: an interactive command line tools that guides the user through the selection of the appropriate parameters for :math:`^15`N relaxation measurements.
+
+-   ``interactive``: an interactive command line tools that guides the user through the selection of the appropriate parameters for :math:`^{15}`N relaxation measurements.
 -   ``ns``: a command line tool to estimate the number of scans required for a given experiment, starting from an HSQC experiment.
 -   ``setuptract``: a command line tool to set up a TRACT experiment on the spectrometer, providing the appropriate delay list based on the correlation time or molecular weight.
 -   ``tract``: a command line tool to fit a TRACT experiment and extract the average correlation time of the system.
--   ``makelists``: a command line tool to generate the lists for running :math:`^15`N T1 and T2 relaxation experiments given the correlation times or the molecular weight.
--   ``solventpre``: a command line tool to generate the lists for running :math:`^1`H T1 and T2 solvent PRE experiments.
+-   ``makelists``: a command line tool to generate the lists for running :math:`^{15}`N T1 and T2 relaxation experiments given the correlation times or the molecular weight.
+-   ``solventpre``: a command line tool to generate the lists for running :math:`^{1}`H T1 and T2 solvent PRE experiments.
 
 The ``interactive`` subcommand
 ******************************
@@ -89,3 +90,23 @@ It is called as:
 The software will then load the spectrum, phase it, integrate it, and fit the obtained decay curves to extract the average correlation time of the system.
 Instead of integrating, the user can also select a region of the spectrum to be fitted, by providing the ``--selectregion`` argument.
 The plot of the extracted correlation times as a function of the position in the spectrum is provided if the ``--plot`` argument is provided.
+
+.. figure:: _static/tract_ubiquitin.png
+    :name: tract_ubiquitin
+    :width: 70.0%
+
+    The result of the TRACT analysis for ubiquitin at 600 MHz in the ``--selectregion`` mode. The raw data are provided in the ``examples`` directory.
+
+At the end of the analysis, the software provides a command to generate the lists for running T1 and T2 experiments based on the obtained correlation time.
+
+The ``makelists`` subcommand
+****************************
+
+This subcommand generates the lists for running :math:`^15`N T1 and T2 relaxation experiments given the correlation times or the molecular weight.
+It is called as:
+
+::
+    
+    t1t2ne makelists --MW 8.6 --Larmor 600
+
+The user needs to provide the molecular weight or the correlation times of the system, and the Larmor frequency, unless the command is run on the spectrometer.
