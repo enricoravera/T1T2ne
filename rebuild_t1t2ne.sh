@@ -7,7 +7,7 @@
 
 # ! # EDIT HERE # ! #
 # -------------------
-source_dir="/home/naoyuki/Programma/GitHub/T1T2ne"     # Location of the package source code
+source_dir="/data_old/NMR/HetRelax/t1tune_main"     # Location of the package source code
 version="0.0.2.dev1"
 # -------------------
 

@@ -92,6 +92,7 @@ def interactive_setup(CO):
     else:
         CO.T1red = float(input('Enter percent residual signal for the longest delay of the T1 experiment (default 5%): ').strip() or "5")*0.01
         CO.T2red = float(input('Enter percent residual signal for the longest CPMG block of the T2 experiment (default 10%): ').strip() or "10")*0.01        
+
     logscale = CO.options['logscale']
     nT1 = CO.nT[0]
     if len(CO.nT) == 1:
@@ -109,7 +110,8 @@ def interactive_setup(CO):
     
         
     print('\nStarting the interactive setup of the T1 experiment...')
-    print('Acquire the reference spectrum first with d7 = 20u.')
+    d29 = -np.log(CO.T1red)/R1 
+    print(f'Acquire the reference spectrum first with d31 = 20u and d29 = {d29:.3f} s.')
     refno = input('Please enter the reference spectrum number (default is 1): ') or '1'
 
     path_ref = os.path.join(CO.basedir, refno)
@@ -132,11 +134,11 @@ def interactive_setup(CO):
     S_ref.integrate(filename='refspec')
     limits = kz.misc.key_to_limits(list(S_ref.integrals.keys()))
 
-    ta = S_ref.ngdict['acqus']['D'][7]
+    ta = S_ref.ngdic['acqus']['D'][31]
     whilecontrol = True
     iteration = 0
     while whilecontrol:
-        print(textcolor(f'To achieve a reduction of the signal intensity of about {(1-CO.T1red)*100:.0f}%, try setting d7 to ' + t1t2ne_utils.f4(T1_30), 'blue'))
+        print(textcolor(f'To achieve a reduction of the signal intensity of about 30%, try setting d31 to ' + t1t2ne_utils.f4(T1_30), 'blue'))
         expno = input('Please enter the experiment number for the T1 experiment once it is done (default is 2): ') or '2'
         path_t1 = os.path.join(CO.basedir, expno)
         if not os.path.exists(path_t1):
@@ -152,12 +154,12 @@ def interactive_setup(CO):
         S_t1.pknl()
         S_t1.adjph()
         S_t1.integrate(filename='t1spec', limits=limits)
-        tb = S_t1.ngdict['acqus']['D'][7]
+        tb = S_t1.ngdic['acqus']['D'][31]
         ratio = 0
         for key in S_t1.integrals.keys():
             ratio += S_t1.integrals[key] / S_ref.integrals[key] * (1/len(S_t1.integrals.keys()))
         R1_ave = -np.log(ratio) / (tb-ta)
-        print(f'Iteration {iteration}: Estimated R1 from the reference and T1 spectra: {R1_ave:.2f} s^-1')
+        print(f'Iteration {iteration}: Estimated R1 from the reference ({ta*1e6:.2f} u) and T1 spectra ({tb:.3f} s) with a ratio of {ratio:.2f}: {R1_ave:.2f} s^-1')
         T1_30_est = -np.log(0.3)/R1_ave
         if abs(T1_30_est - T1_30) / T1_30 > 0.1:
             T1_30 = T1_30_est
@@ -179,18 +181,33 @@ def interactive_setup(CO):
 
 
     print('\nStarting the interactive setup of the T2 experiment...')
-    print('Acquire the reference spectrum first with l1 = 0.')
+    T2max = -np.log(CO.T2red)/R2
+    
     if CO.options['idp'] and not CO.options['small']:
         CO.options['small'] = True
+    if T2max > 0.250:
+        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
+        print('Setting the maximum CPMG block to to 250ms')
+        T2max = 0.250
+        T2red = 1 - np.exp(-R2*T2max)
+        print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
+        if CO.options['large']:
+            print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
+            CO.options['large'] = False
+
     if CO.options['small']:
-        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 600u', 'blue'))
-        d21 = 600
+        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
+        d21 = 750
     else:
         d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
-    p30 = float(input('Enter the p30 value in microseconds (default 80): ').strip() or "80")
+    p30 = float(input('Enter the p30 value in microseconds (default 160): ').strip() or "160")
     d31 = (p30*16+d21*32)
     if CO.options['large']:
         d31 = d31/2
+    l29 = int(T1_30/(d31*1e-6))
+    l31_hl = int(0.250/(d31*1e-6))
+    T2red_max = 1 - np.exp(-R2*0.250)
+    print(f'Acquire the reference spectrum first with l31 = 0 and l29={l29:d}.')
 
     
     refno = input('Please enter the reference spectrum number (default is 1): ') or '1'
@@ -215,15 +232,18 @@ def interactive_setup(CO):
     S_ref.integrate(filename='refspec')
     limits = kz.misc.key_to_limits(list(S_ref.integrals.keys()))
 
-    ta = S_ref.ngdict['acqus']['L'][1]*d31*1e-6
+    ta = S_ref.ngdic['acqus']['L'][31]*d31*1e-6
     whilecontrol = True
     iteration = 0
     l1_30 = int(T2_30/(d31*1e-6))
     if l1_30 <= 0:
         l1_30 = 1
-
+    if l1_30 >= l31_hl:
+        l1_30 = l31_hl
+    R2ave = R2
     while whilecontrol:
-        print(textcolor(f'To achieve a reduction of the signal intensity of about {(1-CO.T2red)*100:.0f}%, try setting l1 to {l1_30:.0f}'))
+        T2red_30 = max(1 - np.exp(-R2ave*l1_30*d31*1e-6), T2red_max)
+        print(textcolor(f'To achieve a reduction of the signal intensity of about {T2red_30*100:.0f}%, try setting l31 to {l1_30:.0f}'))
         expno = input('Please enter the experiment number for the T2 experiment once it is done (default is 2): ') or '2'
         path_t2 = os.path.join(CO.basedir, expno)
         if not os.path.exists(path_t2):
@@ -239,15 +259,17 @@ def interactive_setup(CO):
         S_t2.pknl()
         S_t2.adjph()
         S_t2.integrate(filename='t2spec', limits=limits)
-        tb = S_t2.ngdict['acqus']['L'][1]*d31*1e-6
+        tb = S_t2.ngdic['acqus']['L'][31]*d31*1e-6
         ratio = 0
         for key in S_t2.integrals.keys():
             ratio += S_t2.integrals[key] / S_ref.integrals[key] * (1/len(S_t2.integrals.keys()))
         R2_ave = -np.log(ratio) / (tb-ta)
-        print(f'Iteration {iteration}: Estimated R2 from the reference and T2 spectra: {R2_ave:.2f} s^-1')
+        print(f'Iteration {iteration}: Estimated R2 from the reference ({ta*1e6:.2f} us) and T2 ({tb*1e3:.2f} ms), with ratio of {ratio:.3f}: {R2_ave:.2f} s^-1')
         l1_30_est = int((-np.log(0.3)/R2_ave)/(d31*1e-6))
         if l1_30_est == 0:
             l1_30_est = 1
+        if l1_30_est >= l31_hl:
+            l1_30_est = l31_hl
         if l1_30_est != l1_30:
             l1_30 = l1_30_est
         else:
@@ -255,24 +277,27 @@ def interactive_setup(CO):
         iteration += 1
     
     print(textcolor(f'Convergence achieved for T2 estimation. Estimated $R2_{{ave}}$ is {R2_ave:.2f} s.', 'green'))
-    T2max = -np.log(CO.T2red)/R2_ave
+    T2max = -np.log(T2red)/R2_ave
     nmax = int(T2max/(d31*1e-6))
     if T2max > 0.250:
-        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {CO.T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
+        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
         print('Setting the maximum CPMG block to to 250ms')
         T2max = 0.250
+        T2red = 1 - np.exp(-R2*T2max)
+        print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
+
         if CO.options['large']:
             print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
             CO.options['large'] = False
 
     #print(f'd21 = {d21} us, p30 = {p30} us, cpmgblock = {d31} us')
     print('\n')
-    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {CO.T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
+    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
     print(textcolor('Check if this is too long for your equipment before running the experiment', 'red')) #rosso
     if nT2 > nmax:
         print(textcolor(f'Warning: the number of increments you chose for the CPMG experiment is {nT2}, which is more than the recommended number of loops {nmax} for a longest CPMG block of {T2max:.2f} s. The list will contain duplicates.', 'yellow')) #giallo
     if logscale:
-        vclist_T2 = [-1/R2 * np.log(1-(1-CO.T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]
+        vclist_T2 = [-1/R2 * np.log(1-(1-T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]
         vclist_T2 = np.array(vclist_T2, dtype=np.uint64) #convert to np.uint64
     else:
         vclist_T2 = np.linspace(0,nmax, num=int(nT2), dtype=np.uint64) #linearly spaced list from 0 to nmax
