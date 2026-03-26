@@ -2,8 +2,9 @@
    :trim:
 
 
+##########
 USER GUIDE
-==========
+##########
 
 The software is executed from command line, and the main entry point is the ``t1t2ne`` command. 
 To get a list of available subcommands, you can run:

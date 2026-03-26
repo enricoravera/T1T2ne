@@ -8,9 +8,11 @@ In this model, the spectral density function is computed as:
 
 .. math::
 
-    \tau_D = \frac{d^2}{D_{target} + D_{cosolute}} \\
-    z = \sqrt{2 |\omega| \tau_D + \frac{\tau_D}{\tau_1}} \\
-    J_{outer}(\omega) = \frac{2}{5} \frac{1 + \frac{5 z}{8} + \frac{z^2}{8}}{1 + z + \frac{z^2}{2} + \frac{z^3}{6} + \frac{4 z^4}{81} + \frac{z^5}{81} + \frac{z^6}{648}}
+    \tau_D &= \frac{d^2}{D_{target} + D_{cosolute}} \\
+    z & = \sqrt{2 |\omega| \tau_D + \frac{\tau_D}{\tau_1}} \\
+    J_{outer}(\omega) &= \frac{2}{5} \frac{1 + 5 z / 8 + z^2 / 8}{1 + z + z^2/2 + z^3/6 + 4 z^4/81 + z^5/81 + z^6/648}
+
+.. FOR reference J_{outer}(\omega) &= \frac{2}{5} \frac{1 + {5 z}{8} + \frac{z^2}{8}}{1 + z + \frac{z^2}{2} + \frac{z^3}{6} + \frac{4 z^4}{81} + \frac{z^5}{81} + \frac{z^6}{648}}
         
 where: 
     -   :math:`d` is the distance of closest approach of the paramagnetic center and the nucleus in meters
