@@ -202,16 +202,19 @@ Where:
     -   :math:`\omega_e` is the electron Larmor frequency in rad/s
 
 It can be called providing only the field as:
+
 ::
 
     t1t2ne solventpre --Larmor 600
 
 Alternatively, the user can provide the expected intrinsic T1 of the system and/or the expected linewidth:
+
 ::
 
     t1t2ne solventpre --Larmor 600 --T1 1 --lw 10
 
 The expected linewidth can also be estimated from the molecular weight of the system:
+
 ::
 
     t1t2ne solventpre --Larmor 600 --MW 8.6
