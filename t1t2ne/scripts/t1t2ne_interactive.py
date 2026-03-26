@@ -103,13 +103,13 @@ def interactive_setup(CO):
     else:
         nT2 = CO.nT[1]
     
-    if CO.basedir is None:
-        print('\nFrom now on you need to run this script on the spectrometer, as it will need to access the acquisition parameters to suggest the lists for the experiment.')
-        info = f_findfs.find_topspin()
-        if not info['found'] or not info['spectrometer']:
-            textcolor('TopSpin spectrometer installation not found. Please make sure you are running this script on the spectrometer and that TopSpin is properly installed.', 'red', bold=True)
-            t1t2ne_utils.the_end(CO) 
-        CO.basedir = input('Please enter the base directory for the experiment (default is current directory): ') or '.'
+
+    print('\nFrom now on you need to run this script on the spectrometer, as it will need to access the acquisition parameters to suggest the lists for the experiment.')
+    info = f_findfs.find_topspin()
+    if not info['found'] or not info['spectrometer']:
+        textcolor('TopSpin spectrometer installation not found. Please make sure you are running this script on the spectrometer and that TopSpin is properly installed.', 'red', bold=True)
+        t1t2ne_utils.the_end(CO) 
+    CO.basedir = input('Please enter the base directory for the experiment (default is current directory): ') or '.'
     
         
     print('\nStarting the interactive setup of the T1 experiment...')

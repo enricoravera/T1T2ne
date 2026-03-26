@@ -213,7 +213,7 @@ def LS_aniso(w, S2s, taus, D_comp, r_pdb):
     return LS
 
 def J_Freed(w, d, D_target, D_cosolute, tau_1=1e-9, tau_2=None):
-    """
+    r"""
     Freed spectral density function for outer sphere relaxation. Equations 6.42, 6.48 and 6.50 in `Bertini et al. 2016`_.
  
     .. _Bertini et al. 2016: https://www.sciencedirect.com/science/chapter/monograph/pii/B9780444634368000065
