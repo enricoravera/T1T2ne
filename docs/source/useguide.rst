@@ -6,6 +6,13 @@
 USER GUIDE
 ##########
 
+************
+Introduction
+************
+
+T1T2ne is an helper software package to setup :sup:`15`\ N T\ :sub:`1`\  and T\ :sub:`2`\ relaxation experiments for protein dynamics, to save spectrometer time and to optimize the quality of the data.
+
+
 The software is executed from command line, and the main entry point is the ``t1t2ne`` command. 
 To get a list of available subcommands, you can run:
 ::

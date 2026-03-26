@@ -236,7 +236,7 @@ def SBM(r, B, taue=1e-9, taur=1e-9, tau_M=np.inf, S=0.5, tauv=None, deltat=None,
     return R1_SBM, R2_SBM
 
 def transient_zfs(deltat, B, tauv, S):
-    """
+    r"""
     Calculate the transient zero-field splitting (ZFS) contributions to the electron relaxation rates T1e and T2e using the Bloembergen-Morgan model:
     
     .. math::
@@ -377,7 +377,7 @@ def rotational_taue(g, B, tauv, A=None, I=None):
     return R1e,R2e
 
 def OuterSphere(B, c=1, d=3.6e-10, D_target = 1e-10, D_cosolute = 2.6e-10, f=0.5, taue=1e-9, tauv=2.6e-11, deltat=0.014, AMe=None, I=None, g=None, S=3.5, nuc='1H'):
-    """
+    r"""
     Calculate the outer sphere relaxation rates R1 and R2 using the Freed model:
 
     .. math:: 
