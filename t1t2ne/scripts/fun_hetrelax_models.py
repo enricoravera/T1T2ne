@@ -6,8 +6,13 @@ import scipy.constants
 
 
 def d(r=1.02e-10, nuc1='1H', nuc2='15N'):
-    """
+    r"""
     Function to calculate dipole-dipole coupling constant d
+    
+    .. math::
+    
+        d = \frac{\mu_0 h \gamma_1 \gamma_2}{16 \pi^2 r^3}
+        
     
     Parameters:
     -----------
@@ -31,8 +36,13 @@ def d(r=1.02e-10, nuc1='1H', nuc2='15N'):
     return d_val
 
 def c(Deltasigma=-160, nuc='15N'):
-    """
+    r"""
     function to calculate the CSA constant c
+    
+    .. math::
+    
+        c = -\frac{\Delta \sigma \gamma}{3}
+        
     
     Parameters:
     -----------

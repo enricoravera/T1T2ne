@@ -61,7 +61,7 @@ The resulting spectral density function is then:
     J(\omega) = S^2_{slow} \frac{\tau_{slow}}{1 + (\omega \tau_{slow})^2} + (1 - S^2_{slow}) S^2_{int} \frac{\tau_{int}}{1 + (\omega \tau_{int})^2}
 
 
-The remaining **TODO the remaining what???** being accounted for by a fast motion with short (ps) correlation time (equation 18 in `Salvi et al. (2017)`_).
+The remaining modulation being accounted for by a fast motion with short (ps) correlation time (equation 18 in `Salvi et al. (2017)`_).
 
 .. _Salvi et al. (2017): https://www.sciencedirect.com/science/article/pii/S0079656517300213
 
@@ -76,7 +76,7 @@ We can extract :math:`S^2_{int}` from the obtained value of :math:`c`, assuming 
 
 .. math::
 
-    S^2_{int} = \frac{|\eta_{xy}/(d*c*B_0*P_2(\cos(\theta)))| - 4(S^2_{slow} J(0, \tau_{slow}) + (1-S^2_{slow}) J(0, \tau_{fast})) - 3(S^2_{slow} J(\omega_N, \tau_{slow}) + (1-S^2_{slow}) J(\omega_N, \tau_{fast}))}{4(1-S^2_{slow})(J(0, \tau_{int}) - J(0, \tau_{fast})) + 3(1-S^2_{slow})(J(\omega_N, \tau_{int}) - J(\omega_N, \tau_{fast}))}
+    S^2_{int} = \frac{c - 4(S^2_{slow} J(0, \tau_{slow}) + (1-S^2_{slow}) J(0, \tau_{fast})) - 3(S^2_{slow} J(\omega_N, \tau_{slow}) + (1-S^2_{slow}) J(\omega_N, \tau_{fast}))}{4(1-S^2_{slow})(J(0, \tau_{int}) - J(0, \tau_{fast})) + 3(1-S^2_{slow})(J(\omega_N, \tau_{int}) - J(\omega_N, \tau_{fast}))}
 
 
 In this case the call is, for instance for synuclein at 600 MHz:
