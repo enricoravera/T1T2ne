@@ -178,6 +178,11 @@ def s2(w_N, c, tau_slow, S2_slow = 0.15, tau_int = 1.6e-9):
     The slow motion is assumed to correspond to the tumbling of a protein of the same size of the one under study, and the order parameter of the slow motion is assumed to be 0.15.
     The intermediate motion is assumed to have a correlation time of a peptide of 20 residues (1.6 ns).
     
+    .. math::
+
+        S^2 = \frac{|\eta_{xy}/(d*c*B_0*P_2(\cos(\theta)))| - 4(S^2_{slow} J(0, \tau_{slow}) + (1-S^2_{slow}) J(0, \tau_{fast})) - 3(S^2_{slow} J(\omega_N, \tau_{slow}) + (1-S^2_{slow}) J(\omega_N, \tau_{fast}))}{4(1-S^2_{slow})(J(0, \tau_{int}) - J(0, \tau_{fast})) + 3(1-S^2_{slow})(J(\omega_N, \tau_{int}) - J(\omega_N, \tau_{fast}))}
+    
+
     Parameters
     ----------
     w_N : float

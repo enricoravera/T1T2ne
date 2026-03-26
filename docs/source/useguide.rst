@@ -78,9 +78,10 @@ The software will then generate a delay list for the TRACT experiment that cover
 The ``tract`` subcommand
 ************************
 
-This subcommand fits a TRACT experiment and extracts the average correlation time of the system. It uses the algebraic analysis described in Robson et al. (2021), `doi:10.1007/s10858-021-00379-5`_.
+This subcommand fits a TRACT experiment and extracts the average correlation time of the system. It uses the algebraic analysis described in Robson et al. (2021), `doi:10.1007/s10858-021-00379-5`_, and that is available on GitHub at `https://github.com/nomadiq/TRACT_analysis/tree/master`_.
     
     .. _doi:10.1007/s10858-021-00379-5: https://doi.org/10.1007/s10858-021-00379-5
+    .. _https://github.com/nomadiq/TRACT_analysis/tree/master: https://github.com/nomadiq/TRACT_analysis/tree/master
 
 It is called as:
 ::
@@ -92,8 +93,13 @@ It is called as:
     The user needs to provide the experiment number of the TRACT experiment. If not provided, the software will look for the configuration file. If not found, it will fall back on the ``examples`` directory.
     
 The software will then load the spectrum, phase it, integrate it, and fit the obtained decay curves to extract the average correlation time of the system.
-Instead of integrating, the user can also select a region of the spectrum to be fitted, by providing the ``--selectregion`` argument.
-The plot of the extracted correlation times as a function of the position in the spectrum is provided if the ``--plot`` argument is provided.
+Instead of integrating, the user can also select a region of the spectrum to be fitted, by providing the ``--selectregion`` argument, and the plot of the extracted correlation times as a function of the position in the spectrum is provided if the ``--plot`` argument is provided.
+
+::
+
+    t1t2ne tract --basedir <basedir> --tract <TRACT experiment number> --selectregion --plot
+
+The results are shown in the following figure.
 
 .. figure:: _static/tract_ubiquitin.png
     :name: tract_ubiquitin
@@ -101,10 +107,36 @@ The plot of the extracted correlation times as a function of the position in the
 
     The result of the TRACT analysis for ubiquitin at 600 MHz in the ``--selectregion`` mode. The raw data are provided in the ``examples`` directory.
 
-If the ``--idp`` option is used, the software will **NOT** compute the correlation time but the order parameter :math:`S^2_{int}` of the intermediate motion. 
-The underlying assumption is that the global reorientation of an IDP corresponds to the global reorientation of a globular protein of the same weight (hence the need for the ``--MW`` argument), but has a low order parameter, and that a second motion, corresponding to 20-30 residues (intermediate motion) is present. This model is described in the work of Razaei-Ghaleh et al. (2018), `doi:10.1002/anie.201808172`_.
+At variance with the original paper `doi:10.1007/s10858-021-00379-5`_, we foresee the use for Intrinsically Disordered Proteins (IDPs). When the ``--idp`` option is used, the software will **NOT** compute the correlation time but the order parameter :math:`S^2_{int}` of the intermediate motion. 
+The underlying assumption is that the global reorientation of an IDP corresponds to the global reorientation of a globular protein of the same weight (hence the need for the ``--MW`` argument), but has a low order parameter, and that a second motion, corresponding to 10-20 residues (intermediate motion) is present. This model is described in the work of Razaei-Ghaleh et al. (2018), `doi:10.1002/anie.201808172`_.
     
     .. _doi:10.1002/anie.201808172: https://doi.org/10.1002/anie.201808172 
+
+The resulting spectral density function is then:
+
+.. math::
+
+    J(\omega) = S^2_{slow} \frac{\tau_{slow}}{1 + (\omega \tau_{slow})^2} + (1 - S^2_{slow}) S^2_{int} \frac{\tau_{int}}{1 + (\omega \tau_{int})^2}
+
+
+The remaining being accounted for by a fast motion with short (ps) correlation time (equation 18 in `Salvi et al. (2017)`_).
+
+    .. _Salvi et al. (2017): https://www.sciencedirect.com/science/article/pii/S0079656517300213
+
+Given that
+
+.. math::
+
+    c = \dfrac{\eta_{xy}}{(3 cos^2 \theta - 1) p d} = 4 J(0) + 3 J(\omega_N)
+
+
+where :math:`\eta_{xy}` is the cross-correlated relaxation rate, :math:`\theta` is the angle between the chemical shift anisotropy (CSA) tensor and the N-H bond vector, :math:`p` is the dipolar coupling constant, :math:`d` is the chemical shielding anisotropy constant, and :math:`\omega_N` is the Larmor frequency of the nitrogen nucleus. 
+We can extract :math:`S^2_{int}` from the obtained value of :math:`c`, assuming that :math:`S^2_{slow}`, :math:`\tau_{slow}`, and :math:`\tau_{int}` are known:
+
+.. math::
+
+    S^2_{int} = \frac{|\eta_{xy}/(d*c*B_0*P_2(\cos(\theta)))| - 4(S^2_{slow} J(0, \tau_{slow}) + (1-S^2_{slow}) J(0, \tau_{fast})) - 3(S^2_{slow} J(\omega_N, \tau_{slow}) + (1-S^2_{slow}) J(\omega_N, \tau_{fast}))}{4(1-S^2_{slow})(J(0, \tau_{int}) - J(0, \tau_{fast})) + 3(1-S^2_{slow})(J(\omega_N, \tau_{int}) - J(\omega_N, \tau_{fast}))}
+
 
 In this case the call is, for instance for synuclein at 600 MHz:
 ::
@@ -130,6 +162,7 @@ It is called as:
 ::
     
     t1t2ne makelists --MW 8.6 --Larmor 600
+
 
 or, following the ubiquitin TRACT experiment:
 
@@ -170,7 +203,7 @@ Equations 6.42, 6.48 and 6.50 in `Bertini et al. 2016`_.
     .. _Bertini et al. 2016: https://www.sciencedirect.com/science/chapter/monograph/pii/B9780444634368000065
 
 This spectral density function is then used to compute the expected PRE rates, with optional transient zero-field splitting (ZFS) contribution to the electron relaxation.
-    Default values are for 1 mM Gd-DOTA and a protein of 10 kDa at room temperature. The default values correspond to Gd-DOTA, and are taken from `Li et al. 2002`_.
+Default values are for 1 mM Gd-DOTA and a protein of 10 kDa at room temperature. The default values correspond to Gd-DOTA, and are taken from `Li et al. 2002`_.
     
     .. _Li et al. 2002: https://pubs.acs.org/doi/full/10.1021/ic0200390
 
@@ -226,6 +259,26 @@ By default, the software will suggest a list of 8 delays for T1 and 2 points for
 
 **Important**: The delays are calculated under the assumption that the pulse sequence used for T2 is the one found in figure 1 of `10.1016/j.jmr.2006.10.003`_.:
 
+Acknowledgements
+****************
+
+This software has been developed in the context of the project "`TiReD`_: Time-resolved magnetic resonance to investigate dynamic events in biological systems and biotransformations", funded by the Ministero dell'Università e della Ricerca (MUR) in the framework of the PRIN 2022 program / Next Generation EU (Bando Prin 2022 - Decreto Direttoriale n. 104 del 02-02-2022 2022WANFH5 CUP: B53D23013990006). 
+
+    .. _TiReD: https://tired.cerm.unifi.it/
+
+Besides the development team (Enrico Ravera, Francesco Bruno, and Letizia Fiorucci), this software has been developed with the contribution of:
+
+    -   Marco Schiavina - *UniFI* - Testing and conceptualization
+    -   Massimo Lucci - *CIRMMP* - Technical support, testing and conceptualization
+
+We would like to thank the `CERM/CIRMMP staff`_ who suggested features and tested the software, in particular: 
+
+    -   Linda Cerofolini - *UniFI* - Testing and suggestions
+    -   Giacomo Parigi - *UniFI* - Discussion on relaxation theory
 
 
+    .. _CERM/CIRMMP staff: https://www.cerm.unifi.it/about-us/people
 
+In addition, we would like to mention that the idea for developing this software came from a staff exchange visit between CIRMMP and LIOS as a part of the `MRLatvia`_ project.
+
+    .. _MRLatvia: https://mrlatvia.osi.lv/
