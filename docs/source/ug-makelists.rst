@@ -58,7 +58,7 @@ The software accepts several command line options to customize the procedure:
     -   ``--Deltasigma``: the chemical shift anisotropy of the 15N nucleus in ppm. Default is -160 ppm.
     -   ``--nucs``: the nuclei to use for the calculation of the relaxation rates. Default is 1H and 15N.
 
-.. _Bolognesi et al: https://doi.org/10.1016/j.pnmrs.2025.101577
+.. _Bolognesi et al.: https://doi.org/10.1016/j.pnmrs.2025.101577
     
 .. rubric:: TODO
 
