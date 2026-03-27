@@ -28,10 +28,13 @@ The algorithm works as follows.
 
 -   The software will load the spectrum and process it.
 -   phase it using the interactive phasing GUI (see :func:`klassez.processing.interactive_phase_1D`).
+
     -   If the flag `--integrate` is used, the user will be prompted to select the region of the spectrum to be integrated using the interactive integration GUI (see :func:`klassez.anal.integrate`).  
     -   Else, the software will select the region of the spectrum to be fitted. 
+
         -   using the flag `--selectregion` the user will be prompted to select it using the interactive integration GUI (see :func:`klassez.fit.get_region`).
         -   else, the software will select the NH region of the spectrum to be fitted ([8.6, 7.4] ppm for idps and [10, 7] ppm for globular proteins). 
+
 -   The decay curves obtained from the integrated regions are then fitted to extract the relaxation rates of the TROSY and the AntiTROSY components.
 -   The rates are subtracted to extract the cross-correlation rate, and the correlation time is extracted from it using the algebraic analysis described in `Robson et al. (2021)`_. 
 -   The values can be visualized as function of the position in the spectrum by providing the ``--plot`` argument.

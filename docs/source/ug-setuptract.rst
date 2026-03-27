@@ -46,21 +46,28 @@ If I have a 8.6 kDa protein (ubiquitin) and a 600 MHz spectrometer, the script s
 The software accepts several command line options to customize the procedure:
 
 -   Parameters related to the acquisition of the experiments:
+
     -   ``--nT``: the number of increments in the suggested vdlist. Default is 8. If more than one value is provided, the first one will be used and the others will be discarded.
     -   ``--randomize``: whether to randomize the order of the values in the lists. Default is False.
     -   ``--Larmor``: the Larmor frequency of the spectrometer, in MHz. It will be read from the configuration file of the spectrometer.
     -   ``--B0``: the magnetic field strength of the spectrometer, in Tesla. It will  be read from the configuration file of the spectrometer.
+
 -   Parameters related to the estimation of the correlation times and order parameters:
+
     -   ``--S2``: the Lipari-Szabo order parameter S2 to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one
     -   ``--MW``: the molecular weight of the protein in kDa, to be used for estimating the longest correlation time (tau_slow in the IDP model).
     -   ``--tau``: the correlation times to use for the estimation of the initial delays. In IDP mode, two values should be provided, else only one. If not set, they will be estimated from the MW. Otherwise, default T\ :sub:`1`\ and T\ :sub:`2`\  values will be used for the non-IDP model, and the three-tau model described in `Bolognesi et al.`_ for the IDP model.
     -   ``--idp``: whether the system under study is an intrinsically disordered protein (IDP). If set, the software will use the three-tau model described above. Default is False.
+
         -   If set, it will also select a longer delay in the cpmg for the T\ :sub:`2`\  experiment, optimized for the expected relaxation behavior of IDPs as described by `Bolognesi et al.`_.
         -   If set, it will also select a longer delay for the T\ :sub:`1`\  experiment, to avoid excessive heating, because cross-correlations are less important in IDPs.
         -   the ``--MW`` argument will be used to compute the slowest correlation time.
         -   ``--corr_window_idp``: the length of the correlation window for the IDP model, in residues. Default is 20.
+
     -   ``--T``: the temperature in Kelvin, to be used for estimating the taus from MW. Default is 298 K.
+
 -   Parameters related to relaxation:
+
     -   ``--r``: the length of the 1H-15N bond in Angstroms. Default is 1.02 A.
     -   ``--Deltasigma``: the chemical shift anisotropy of the 15N nucleus in ppm. Default is -160 ppm.
     -   ``--theta``: the angle between the 1H-15N bond and the principal axis of the CSA tensor in degrees. Default is 17 degrees.
