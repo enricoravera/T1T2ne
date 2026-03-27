@@ -411,7 +411,8 @@ class Conf_Optns:
             'idp': parser.idp if hasattr(parser, 'idp') else None, # all except ns
             'randomize': parser.randomize if hasattr(parser, 'randomize') else None, # makelists option
             'readints': parser.readints if hasattr(parser, 'readints') else None, # tract options
-            'basl': parser.basl if hasattr(parser, 'basl') else None, # tract options
+            'basl': parser.basl if hasattr(parser, 'basl') else None, # ns options
+            'snr2d': parser.snr2d if hasattr(parser, 'snr2d') else None, #ns options
         }
         if self.module not in ['tract', 'ns']:
             if self.options['integrate'] or self.options['selectregion']:
@@ -427,13 +428,15 @@ class Conf_Optns:
                 print('Neither --integrate nor --selectregion options were provided. Defaulting to --selectregion.')
                 self.options['integrate'] = False
                 self.options['selectregion'] = True   
-        if self.module != 'makelists':
+        if self.module not in ['makelists', 'interactive']:
             if self.options['large'] or self.options['small']:
                 raise ValueError('The --large and --small options are only valid for the makelists module. Please remove them and run the script again.')
         else:
             if self.options['large'] and self.options['small']:
                 raise ValueError('The --large and --small options are mutually exclusive, as they are used to suggest different vdlist for the design of T1 and T2 experiments. Please choose one of the two options and run the script again.')        
-        
+        if self.module != 'ns':
+            if self.options['basl'] or self.options['snr2d']:
+                raise ValueError('The --basl and --snr2d are only valid for the NS module') 
         
     def evaluate_S2_tau(self, parser):
         """
@@ -789,7 +792,7 @@ class Conf_Optns:
                         self.basedir = input('Please provide the base directory of the experiment: ')
                         self.tract = input('Please provide the experiment number of the TRACT experiment: ')
                         self.hsqc = input('Please provide the experiment number of the reference HSQC spectrum: ')
-        if self.module in ['interactive', 'ns']:
+        if self.module == 'interactive':
             self.basedir = None
             self.tract = None
             self.hsqc = None
@@ -803,8 +806,10 @@ class Conf_Optns:
             if self.module == 'ns':
                 if hasattr(parser, 'hsqc') and parser.hsqc is not None:
                     self.hsqc = int(parser.hsqc)
+                elif hasattr(parser, 'tract') and parser.tract is not None:
+                    self.tract = int(parser.tract)
                 else:   
-                    raise ValueError('The --hsqc option must be provided when the --basedir option is used to specify the base directory of the experiment. Please provide it and run the script again.')
+                    raise ValueError('The --hsqc option or the --tract option must be provided when the --basedir option is used to specify the base directory of the experiment. Please provide it and run the script again.')
         if hasattr(parser, 'tract') and parser.tract is not None:
             self.tract = int(parser.tract)
         if hasattr(parser, 'hsqc') and parser.hsqc is not None:

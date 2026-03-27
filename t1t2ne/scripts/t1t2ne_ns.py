@@ -24,6 +24,7 @@ class NSCmd(BaseCommand):
         parser.add_argument('--basedir', type=str, help='Base directory for the experiment (where the reference spectrum is located)')
         parser.add_argument('--tract', type=str, help='expno of the TRACT experiment (used to estimate the SNR). Either this or --hsqc should be provided')
         parser.add_argument('--hsqc', type=str, help='expno of the reference HSQC spectrum (used to estimate the SNR). Either this or --tract should be provided')
+        parser.add_argument('--snr2d', action='store_true', help='Evaluate SNR directly from the 2D spectrum peaks, disregard all other options.')
         parser.add_argument('--nres', type=int, help='The number of non-proline residues in the protein. If not provided, it will be estimated from the molecular weight.')
         parser.add_argument('--lw', type=float, help='The linewidth of the peaks in the reference spectrum in Hz. If not provided, it will be estimated from the reference spectrum.')
         parser.add_argument('--xred', nargs='*', help='The percent residual signal for the longest delay of the experiment, or NOE efficiency as percentage. Accepts a list, computes the optimal number of scans for each value')
@@ -81,6 +82,8 @@ def estimate_snr(CO):
         The function prints the estimated SNR per scan for a single peak, suggests a number of scans for the three experiments, and updates the ``references`` attribute of the ``CO`` object with the references used for the calculations.
     """
 
+    if CO.options['snr2d'] and (not hasattr(CO, 'hsqc') or CO.hsqc is None):
+        raise ValueError('--snr2d requires an HSQC spectrum.')
 
     if hasattr(CO, 'MW') and CO.MW is not None:
         MW = CO.MW
@@ -138,6 +141,16 @@ def estimate_snr(CO):
         trace = S_hsqc.Trf2['0.00']
         ns = S_hsqc.ngdic['acqus']['NS']
         ntr = S_hsqc.acqus['TD1']  
+        if CO.options['snr2d']:
+            S_hsqc.procs['p0_2'] = 0
+            S_hsqc.procs['p1_2'] = 0
+            S_hsqc.procs['p0_1'] = 0
+            S_hsqc.procs['p1_1'] = 0                    
+            S_hsqc.adjph()
+            snr_f1, snr_f2 = kz.anal.snr(S_hsqc.ppm_f1, S_hsqc.ppm_f2, S_hsqc.rr, gui=True)
+            SNR = min(snr_f1, snr_f2)/(2*np.sqrt(ns))
+            print(textcolor(f'\nSNR per scan for a single peak: {SNR:.2f}\n', 'green'))
+            return SNR            
     else:
         path = os.path.join(CO.basedir, f'{CO.tract}')
     #load the dataset and check if it's a TRACT experiment
