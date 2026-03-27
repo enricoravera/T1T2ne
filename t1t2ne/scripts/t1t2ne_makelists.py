@@ -119,53 +119,18 @@ def create_lists(CO, R1, R2):
     else:
         CO.T1red = float(input('Enter percent residual signal for the longest delay of the T1 experiment (default 5%): ').strip() or "5")*0.01
         CO.T2red = float(input('Enter percent residual signal for the longest CPMG block of the T2 experiment (default 10%): ').strip() or "10")*0.01        
-    T2red = CO.T2red
+
     T1max = -np.log(CO.T1red)/R1
-    T2max = -np.log(CO.T2red)/R2
+
     nT1 = CO.nT[0]
     if len(CO.nT) == 1:
         nT2 = nT1
     else:
         nT2 = CO.nT[1]
-    if T2max > 0.250:
-        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
-        print('Setting the maximum CPMG block to to 250ms')
-        T2max = 0.250
-        T2red = 1 - np.exp(-R2*T2max)
-        print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
-        if CO.options['large']:
-            print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
-            CO.options['large'] = False
-    if CO.options['small']:
-        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
-        d21 = 750
-    else:
-        d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
-    p30 = float(input('Enter the p30 value in microseconds (default 80): ').strip() or "80")
-    d31 = (p30*16+d21*32)
-    if CO.options['large']:
-        d31 = d31/2
-    else:
-        if -np.log(1-(1-T2red)*(1/(nT2-1))) < d31*1e-6*R2:
-            print(textcolor('Warning', 'yellow') + f': the second CPMG point in logscale would be a repetition of the first, switching to "large" sequence') #giallo
-            d31 = d31/2
-    if CO.options['small']:
-        if d31>0.5/R1:
-            print(textcolor('Warning', 'yellow') + f': the CPMG block of {d31*1e-6:.2f} s is too long for the T2 timescale, switching off the  "small" option') #giallo
-            d21 = 450
-            d31 = (p30*16+d21*32)
-            CO.options['small'] = False
-        else:
-            CO.add_ref('bolognesi')
-        
-    nmax = int(T2max/(d31*1e-6))
     #print(f'd21 = {d21} us, p30 = {p30} us, cpmgblock = {d31} us')
     print('\n')
     print(textcolor(f'The longest delay for the T1 experiment for a residual signal of {CO.T1red*100:.0f}% should be {T1max:.2f} s.', 'default', bold=True)) #grassetto
-    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
-    print(textcolor('Check if this is too long for your equipment before running the experiment', 'red')) #rosso
-    if nT2 > nmax:
-        print(textcolor(f'Warning: the number of increments you chose for the CPMG experiment is {nT2}, which is more than the recommended number of loops {nmax} for a longest CPMG block of {T2max:.2f} s. The list will contain duplicates.', 'yellow')) #giallo
+
     #create the vdlist for the 15N T1 experiment
     if logscale:
         vdlist_T1 = [2e-5 - 1/R1 * np.log(1-(1-CO.T1red)*i/(nT1-1)) for i in range(nT1)] #logarithmically spaced list from 20u to to T1max
@@ -183,6 +148,52 @@ def create_lists(CO, R1, R2):
         random.shuffle(vdlist_T1)
     t1t2ne_utils.out_vdlist(vdlist_T1)
     #create the vclist for the 15N T2 experiment
+
+    T2red = CO.T2red    
+    T2max = -np.log(T2red)/R2
+    if CO.options['idp'] and not CO.options['small']:
+        CO.options['small'] = True    
+    if CO.options['small']:
+        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
+        d21 = float(input('Enter the d21 value in microseconds (default 750): ').strip() or "750")
+    else:
+        d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
+    p30 = float(input('Enter the p30 value in microseconds (default 160): ').strip() or "160")
+
+    T2limit = t1t2ne_utils.T2max_duty_cycle(p30=p30, d21=d21)
+    print(textcolor(f'With the chosen d21 and p30 values, the maximum CPMG block allowed by the duty cycle is {T2limit:.2f} s.', 'blue'))
+    if T2max > T2limit:
+        print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
+        print(textcolor(f'Setting the maximum CPMG block to {T2limit:.3f} s', 'yellow'))
+        T2max = T2limit
+        T2red = 1 - np.exp(-R2*T2max)
+        print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
+        if CO.options['large']:
+            print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
+            CO.options['large'] = False
+
+    d31 = (p30*16+d21*32)
+    if CO.options['large']:
+        d31 = d31/2
+    else:
+        if -np.log(1-(1-T2red)*(1/(nT2-1))) < d31*1e-6*R2:
+            print(textcolor('Warning', 'yellow') + f': the second CPMG point in logscale would be a repetition of the first, switching to "large" sequence') #giallo
+            d31 = d31/2
+    if CO.options['small']:
+        if d31>0.5/R1:
+            print(textcolor('Warning', 'yellow') + f': the CPMG block of {d31*1e-6:.2f} s is too long for the T2 timescale, switching off the  "small" option') #giallo
+            d21 = 450
+            d31 = (p30*16+d21*32)
+            CO.options['small'] = False
+        else:
+            CO.add_ref('bolognesi')
+        
+    nmax = int(T2max/(d31*1e-6))
+    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
+    print(textcolor('Check if this is too long for your equipment before running the experiment', 'red')) #rosso
+    if nT2 > nmax:
+        print(textcolor(f'Warning: the number of increments you chose for the CPMG experiment is {nT2}, which is more than the recommended number of loops {nmax} for a longest CPMG block of {T2max:.2f} s. The list will contain duplicates.', 'yellow')) #giallo
+
     if logscale:
         vclist_T2 = [-1/R2 * np.log(1-(1-T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]
         vclist_T2 = np.array(vclist_T2, dtype=np.uint64) #convert to np.uint64

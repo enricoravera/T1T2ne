@@ -197,29 +197,32 @@ def interactive_setup(CO):
     
     if CO.options['idp'] and not CO.options['small']:
         CO.options['small'] = True
-    if T2max > 0.250:
+    if CO.options['small']:
+        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
+        d21 = float(input('Enter the d21 value in microseconds (default 750): ').strip() or "750")
+    else:
+        d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
+    p30 = float(input('Enter the p30 value in microseconds (default 160): ').strip() or "160")
+
+    T2limit = t1t2ne_utils.T2max_duty_cycle(p30=p30, d21=d21)
+    print(textcolor(f'With the chosen d21 and p30 values, the maximum CPMG block allowed by the duty cycle is {T2limit:.2f} s.', 'blue'))
+    if T2max > T2limit:
         print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
-        print('Setting the maximum CPMG block to to 250ms')
-        T2max = 0.250
+        print(textcolor(f'Setting the maximum CPMG block to {T2limit:.3f} s', 'yellow'))
+        T2max = T2limit
         T2red = 1 - np.exp(-R2*T2max)
         print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
         if CO.options['large']:
             print(textcolor('You chose the "large" sequence, which is optimized for short T2 times, this option will be disabled.', 'yellow', bold=True))
             CO.options['large'] = False
 
-    if CO.options['small']:
-        print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
-        d21 = 750
-    else:
-        d21 = float(input('Enter the d21 value in microseconds (default 450): ').strip() or "450")
-    p30 = float(input('Enter the p30 value in microseconds (default 160): ').strip() or "160")
     d31 = (p30*16+d21*32)
     if CO.options['large']:
         d31 = d31/2
-    T2red_max = 1 - np.exp(-R2*0.250)
-    T2_30 = min(T2_30, 0.250)
+    T2red_max = 1 - np.exp(-R2*T2limit)
+    T2_30 = min(T2_30, T2limit)
     l29 = int(T2_30/(d31*1e-6))
-    l31_hl = int(0.250/(d31*1e-6))
+    l31_hl = int(T2limit/(d31*1e-6))
 
     print(f'Acquire the reference spectrum first with l31 = 0 and l29={l29:d}.')
 
@@ -298,10 +301,10 @@ def interactive_setup(CO):
     print(textcolor(f'Convergence achieved for T2 estimation. Estimated $R2_{{ave}}$ is {R2_ave:.2f} s.', 'green'))
     T2max = -np.log(T2red)/R2_ave
     nmax = int(T2max/(d31*1e-6))
-    if T2max > 0.250:
+    if T2max > T2limit:
         print(textcolor(f'Alert: the longest CPMG block for a residual signal of {T2red*100:.0f}% is {T2max:.2f} s, which is likely too long for any equipment.', 'red', bold=True))
-        print('Setting the maximum CPMG block to to 250ms')
-        T2max = 0.250
+        print(textcolor(f'Setting the maximum CPMG block to {T2limit:.3f} s', 'yellow'))
+        T2max = T2limit
         T2red = 1 - np.exp(-R2*T2max)
         print(textcolor(f'With this maximum CPMG block, the expected residual signal is {T2red*100:.0f}%.', 'yellow', bold=True))
 

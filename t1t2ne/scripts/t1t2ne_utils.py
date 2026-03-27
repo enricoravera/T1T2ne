@@ -11,7 +11,32 @@ from pathlib import Path
 from . import hydrodynamics_utils, f_findfs
 from .textcolor import textcolor
 
+def T2max_duty_cycle(p30=160, d21=450):
+    """
+    Computes the duty cycle of the CPMG experiment as the ratio between the duration of the pulse and overall duration of the cycle, returns the maximum duration with respect to the standard 250 ms.
 
+    Parameters
+    ----------
+    p30 : float
+        The duration of a 90 degree pulse in seconds.
+    d21 : float
+        The duration of a delay in seconds.
+
+    Returns
+    -------
+    max_cpmg = float
+        the maximum length of the CPMG.
+    """
+
+    npulse = 8
+    ndelays = 2 * npulse
+    d31 = (p30*npulse+d21*ndelays)    
+    d31_standard = (160*npulse+450*ndelays)
+    m = int(250000 / d31_standard)
+    mx = int((160/p30) * (d21/450) * m)
+    max_cpmg = mx * d31 * 1e-6
+    return max_cpmg
+    
 def fs_version(S):
     """
     Determines the version of TopSpin used to acquire the spectrum S by looking at the '_coreheader' parameter in the acqus dictionary of the spectrum. 
