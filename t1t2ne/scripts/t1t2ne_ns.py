@@ -85,45 +85,6 @@ def estimate_snr(CO):
     if CO.options['snr2d'] and (not hasattr(CO, 'hsqc') or CO.hsqc is None):
         raise ValueError('--snr2d requires an HSQC spectrum.')
 
-    if hasattr(CO, 'MW') and CO.MW is not None:
-        MW = CO.MW
-    else:
-        if hasattr(CO, 'lw') and CO.lw is not None:
-            print('No value provided for the molecular weight. Estimating it from the linewidth provided. This is a rough estimate, but it should be sufficient for our purposes.')
-            MW = (CO.lw*np.pi/7.42 - 0.1674)/0.5998
-            CO.add_ref('bermel')
-            CO.add_ref('cavanagh')
-        elif hasattr(CO, 'nres') and CO.nres is not None:
-            MW = CO.nres*0.110/0.937 #average mass of an amino acid is 110 Da, and we multiply by 0.937 to account for the fact that prolines do not have an amide proton and therefore do not contribute to the signal in the HSQC spectrum. This is a rough estimate, but it should be sufficient for our purposes.
-        elif hasattr(CO, 'tau') and CO.tau is not None:
-            CO.add_ref('cavanagh')
-            MW = (hydrodynamics_utils.tau(CO.tau[0]*1e9, 298.15, T_old=CO.T)- 0.1674)/0.5998
-        else:   
-            raise ValueError('No value provided for the molecular weight or linewidth. Cannot estimate molecular weight.')
-    
-    if hasattr(CO, 'nres') and CO.nres is not None:
-        nres = CO.nres
-    else:
-        nres = np.rint(MW/0.110)*(0.937) #average mass of an amino acid is 110 Da, and we multiply by 0.937 to account for the fact that prolines do not have an amide proton and therefore do not contribute to the signal in the HSQC spectrum. This is a rough estimate, but it should be sufficient for our purposes.
-
-    if not hasattr(CO, 'lw') or CO.lw is None:    
-        if CO.options['idp']:
-            tau_slow = CO.tau[0]
-            tau_int = CO.tau[1]
-            S2_slow = CO.S2[0]
-            S2_int = CO.S2[1]
-            CO.add_ref('rezaei-ghaleh')
-            CO.add_ref('salvi')
-            CO.add_ref('parigi2000')
-            tau_average = S2_slow*tau_slow + S2_int*tau_int
-        else:
-            tau_average = CO.tau[0]
-        R2H = tau_average*7.42e9 
-        CO.add_ref('bermel')
-        amidelinewidth = R2H/(np.pi)    
-    else:
-        amidelinewidth = CO.lw
-    amidelinewidth_p = kz.misc.freq2ppm(amidelinewidth, CO.B_0*kz.sim.gamma['1H'])
 
     #estimate signal to noise ratio. if HSQC is provided, use it. Else, use the TRACT
     if CO.hsqc is not None:
@@ -188,6 +149,45 @@ def estimate_snr(CO):
         result = f_fit.fit_skewnormal(x, signal)
         model, A, a = f_fit.skgaussian_ls(result.params, x, signal, result=True)
 
+    if hasattr(CO, 'MW') and CO.MW is not None:
+        MW = CO.MW
+    else:
+        if hasattr(CO, 'lw') and CO.lw is not None:
+            print('No value provided for the molecular weight. Estimating it from the linewidth provided. This is a rough estimate, but it should be sufficient for our purposes.')
+            MW = (CO.lw*np.pi/7.42 - 0.1674)/0.5998
+            CO.add_ref('bermel')
+            CO.add_ref('cavanagh')
+        elif hasattr(CO, 'nres') and CO.nres is not None:
+            MW = CO.nres*0.110/0.937 #average mass of an amino acid is 110 Da, and we multiply by 0.937 to account for the fact that prolines do not have an amide proton and therefore do not contribute to the signal in the HSQC spectrum. This is a rough estimate, but it should be sufficient for our purposes.
+        elif hasattr(CO, 'tau') and CO.tau is not None:
+            CO.add_ref('cavanagh')
+            MW = (hydrodynamics_utils.tau(CO.tau[0]*1e9, 298.15, T_old=CO.T)- 0.1674)/0.5998
+        else:   
+            raise ValueError('No value provided for the molecular weight or linewidth. Cannot estimate molecular weight.')
+    
+    if hasattr(CO, 'nres') and CO.nres is not None:
+        nres = CO.nres
+    else:
+        nres = np.rint(MW/0.110)*(0.937) #average mass of an amino acid is 110 Da, and we multiply by 0.937 to account for the fact that prolines do not have an amide proton and therefore do not contribute to the signal in the HSQC spectrum. This is a rough estimate, but it should be sufficient for our purposes.
+
+    if not hasattr(CO, 'lw') or CO.lw is None:    
+        if CO.options['idp']:
+            tau_slow = CO.tau[0]
+            tau_int = CO.tau[1]
+            S2_slow = CO.S2[0]
+            S2_int = CO.S2[1]
+            CO.add_ref('rezaei-ghaleh')
+            CO.add_ref('salvi')
+            CO.add_ref('parigi2000')
+            tau_average = S2_slow*tau_slow + S2_int*tau_int
+        else:
+            tau_average = CO.tau[0]
+        R2H = tau_average*7.42e9 
+        CO.add_ref('bermel')
+        amidelinewidth = R2H/(np.pi)    
+    else:
+        amidelinewidth = CO.lw
+    amidelinewidth_p = kz.misc.freq2ppm(amidelinewidth, CO.B_0*kz.sim.gamma['1H'])
     
     print(f'\nEstimated MW of the protein: {MW:.2f} kDa, which corresponds to approximately {nres:.0f} residues')
     #divide the area of the skew normal by the number of residues
