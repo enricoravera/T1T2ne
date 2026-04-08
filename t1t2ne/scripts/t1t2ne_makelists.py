@@ -7,19 +7,20 @@ from .base import BaseCommand
 from .textcolor import textcolor
 from . import t1t2ne_utils, fun_hetrelax_models
 
+
 class MakeListsCmd(BaseCommand):
     """Make lists of values for the protein dynamics experiments"""
     SHORT_HELP = "Make lists of values for the protein dynamics experiments"
     DESCRIPTION = '\n'.join([
-    'With this module, the lists of values for the protein dynamics experiments are created, and the heteronuclear NOE expected value is printed.',
-    'In the standard operation mode, the tau_c or MW are used to compute the optimal lists.'
-    'S2 is assumed to be 0.9 for the standard operation mode.'
-    'The IDP mode requires input of the molecular weight of the protein to estimate the correlation time of the slow motion.',
-    'Optionally, the length of the correlation window can be provided as an estimate for the intermediate correlation time.',
-    'If not provided, it assumes a correlation time of 1.6 ns for the intermediate motion.'
-    'Two S2 values are expected in the IDP mode. If not provided, they are assumed to be 0.15 for the slow motion and 0.35 for the intermediate motion.'
-    ,])
-    
+        'With this module, the lists of values for the protein dynamics experiments are created, and the heteronuclear NOE expected value is printed.',
+        'In the standard operation mode, the tau_c or MW are used to compute the optimal lists.'
+        'S2 is assumed to be 0.9 for the standard operation mode.'
+        'The IDP mode requires input of the molecular weight of the protein to estimate the correlation time of the slow motion.',
+        'Optionally, the length of the correlation window can be provided as an estimate for the intermediate correlation time.',
+        'If not provided, it assumes a correlation time of 1.6 ns for the intermediate motion.'
+        'Two S2 values are expected in the IDP mode. If not provided, they are assumed to be 0.15 for the slow motion and 0.35 for the intermediate motion.',
+        ])
+
     @staticmethod
     def add_arguments(parser):
         """Adds the arguments for the MakeLists command to the parser."""
@@ -41,6 +42,7 @@ class MakeListsCmd(BaseCommand):
         parser.add_argument('--large', action='store_true', help='Whether to create the lists for the "large" sequence, which is optimized for short T2 times. If True, the d21 value is set to 450 us and only 8 cycles per CPMG block are used instead of 16. Default is False.')
         parser.add_argument('--small', action='store_true', help='Whether to create the lists for the ".idp" sequence, which is optimized for long T2 times. If True, the d21 value is set to 600 us. Default is False.')
         parser.add_argument('--randomize', action='store_true', help='Whether to randomize the order of the values in the lists. Default is False.')
+
     @staticmethod
     def run(args):
         """Runs the MakeLists command."""
@@ -54,17 +56,18 @@ class MakeListsCmd(BaseCommand):
         create_lists(CO, R1, R2)
         t1t2ne_utils.the_end(CO)
         exit()
-        
+
+
 def create_lists(CO, R1, R2):
     """
     Creates vdlist and vclist for T1 and T2 experiments based on the computed R1 and R2 values.
     The vdlist is created so that the longest delay of the T1 experiment corresponds to a residual signal intensity of T1red, which is a user-defined percentage reduction. Defaults to 5%.
     The vclist is created so that the longest CPMG block of the T2 experiment corresponds to a residual signal intensity of T2red, which is a user-defined percentage reduction. Defaults to 10%.
     The user can choose to create the lists in logarithmic or linear scale. In logscale, the protocol suggested by F. Ferrage in `his protocol`_ is used.
-    
+
     .. _his protocol: https://doi.org/10.1007/978-1-61779-480-3_9
-    
-    
+
+
     Parameters
     ----------
     CO : Conf_Optns object
@@ -95,16 +98,16 @@ def create_lists(CO, R1, R2):
         The R1 relaxation rate in s^-1.
     R2 : float
         The R2 relaxation rate in s^-1.
-        
+
     Returns
     -------
     None
         The function prints the created vdlist and vclist in Bruker-readable format and updates the ``references`` attribute of the ``CO`` object with the references used for the calculations.
-    
+
     """
-    
+
     print(f'Creating vdlist with {CO.nT[0]} points and vclist with {CO.nT[1]} points...')
-    
+
     logscale = CO.options['logscale']
     if logscale:
         CO.add_ref('ferrage')
@@ -115,10 +118,10 @@ def create_lists(CO, R1, R2):
             CO.T1red = CO.xred[0]*0.01
             CO.T2red = CO.xred[1]*0.01
         else:
-            print(textcolor('Warning: the xred parameter accepts only one or two values, defaulting to 5% for T1 and 10% for T2', 'yellow', bold=True))        
+            print(textcolor('Warning: the xred parameter accepts only one or two values, defaulting to 5% for T1 and 10% for T2', 'yellow', bold=True))
     else:
         CO.T1red = float(input('Enter percent residual signal for the longest delay of the T1 experiment (default 5%): ').strip() or "5")*0.01
-        CO.T2red = float(input('Enter percent residual signal for the longest CPMG block of the T2 experiment (default 10%): ').strip() or "10")*0.01        
+        CO.T2red = float(input('Enter percent residual signal for the longest CPMG block of the T2 experiment (default 10%): ').strip() or "10")*0.01
 
     T1max = -np.log(CO.T1red)/R1
 
@@ -127,32 +130,32 @@ def create_lists(CO, R1, R2):
         nT2 = nT1
     else:
         nT2 = CO.nT[1]
-    #print(f'd21 = {d21} us, p30 = {p30} us, cpmgblock = {d31} us')
     print('\n')
-    print(textcolor(f'The longest delay for the T1 experiment for a residual signal of {CO.T1red*100:.0f}% should be {T1max:.2f} s.', 'default', bold=True)) #grassetto
+    print(textcolor(f'The longest delay for the T1 experiment for a residual signal of {CO.T1red*100:.0f}% should be {T1max:.2f} s.', 'default', bold=True))
 
-    #create the vdlist for the 15N T1 experiment
+    # create the vdlist for the 15N T1 experiment
     if logscale:
-        vdlist_T1 = [2e-5 - 1/R1 * np.log(1-(1-CO.T1red)*i/(nT1-1)) for i in range(nT1)] #logarithmically spaced list from 20u to to T1max
+        vdlist_T1 = [2e-5 - 1/R1 * np.log(1-(1-CO.T1red)*i/(nT1-1)) for i in range(nT1)]    # logarithmically spaced list from 20u to to T1max
     else:
-        vdlist_T1 = np.linspace(2e-5, T1max, num=nT1) #linearly spaced list from 20u to to T1max
-    #round to multiples of 10 ms or 20 ms depending on the --idp option
+        vdlist_T1 = np.linspace(2e-5, T1max, num=nT1)    # linearly spaced list from 20u to to T1max
+    # round to multiples of 10 ms or 20 ms depending on the --idp option
     if CO.options['idp']:
-        vdlist_T1 = [round(x*1e3/20)*20/1e3 for x in vdlist_T1] #round to multiples of 20 ms
+        vdlist_T1 = [round(x*1e3/20)*20/1e3 for x in vdlist_T1]     # round to multiples of 20 ms
     else:
-        vdlist_T1 = [round(x*1e3/10)*10/1e3 for x in vdlist_T1] #round to multiples of 10 ms
-    vdlist_T1[0] = 2e-5 #set the first point to 20 us
+        vdlist_T1 = [round(x*1e3/10)*10/1e3 for x in vdlist_T1]     # round to multiples of 10 ms
+    vdlist_T1[0] = 2e-5      # set the first point to 20 us
     print(textcolor('\nvdlist for T1 experiment:', 'blue'))
     print('-'*25)
     if CO.options['randomize']:
         random.shuffle(vdlist_T1)
     t1t2ne_utils.out_vdlist(vdlist_T1)
-    #create the vclist for the 15N T2 experiment
+    print()
 
-    T2red = CO.T2red    
+    # create the vclist for the 15N T2 experiment
+    T2red = CO.T2red
     T2max = -np.log(T2red)/R2
     if CO.options['idp'] and not CO.options['small']:
-        CO.options['small'] = True    
+        CO.options['small'] = True
     if CO.options['small']:
         print(textcolor('Using ".idp" sequence, which is optimized for long T2 times. d21 = 750u', 'blue'))
         d21 = float(input('Enter the d21 value in microseconds (default 750): ').strip() or "750")
@@ -177,28 +180,28 @@ def create_lists(CO, R1, R2):
         d31 = d31/2
     else:
         if -np.log(1-(1-T2red)*(1/(nT2-1))) < d31*1e-6*R2:
-            print(textcolor('Warning', 'yellow') + f': the second CPMG point in logscale would be a repetition of the first, switching to "large" sequence') #giallo
+            print(textcolor('Warning', 'yellow') + ': the second CPMG point in logscale would be a repetition of the first, switching to "large" sequence')
             d31 = d31/2
     if CO.options['small']:
-        if d31>0.5/R1:
-            print(textcolor('Warning', 'yellow') + f': the CPMG block of {d31*1e-6:.2f} s is too long for the T2 timescale, switching off the  "small" option') #giallo
+        if d31 > 0.5 / R1:
+            print(textcolor('Warning', 'yellow') + f': the CPMG block of {d31*1e-6:.2f} s is too long for the T2 timescale, switching off the  "small" option')
             d21 = 450
             d31 = (p30*16+d21*32)
             CO.options['small'] = False
         else:
             CO.add_ref('bolognesi')
-        
+
     nmax = int(T2max/(d31*1e-6))
-    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.' , 'default', bold=True)) #grassetto
-    print(textcolor('Check if this is too long for your equipment before running the experiment', 'red')) #rosso
+    print(textcolor(f'The longest CPMG block for T2 for a residual signal of {T2red*100:.0f}% should be {T2max:.2f} s, with {nmax} loops.', 'default', bold=True))
+    print(textcolor('Check if this is too long for your equipment before running the experiment', 'red'))
     if nT2 > nmax:
-        print(textcolor(f'Warning: the number of increments you chose for the CPMG experiment is {nT2}, which is more than the recommended number of loops {nmax} for a longest CPMG block of {T2max:.2f} s. The list will contain duplicates.', 'yellow')) #giallo
+        print(textcolor(f'Warning: the number of increments you chose for the CPMG experiment is {nT2}, which is more than the recommended number of loops {nmax} for a longest CPMG block of {T2max:.2f} s. The list will contain duplicates.', 'yellow'))
 
     if logscale:
         vclist_T2 = [-1/R2 * np.log(1-(1-T2red)*i/(nT2-1))/(d31*1e-6) for i in range(nT2)]
-        vclist_T2 = np.array(vclist_T2, dtype=np.uint64) #convert to np.uint64
+        vclist_T2 = np.array(vclist_T2, dtype=np.uint64)     # convert to np.uint64
     else:
-        vclist_T2 = np.linspace(0,nmax, num=int(nT2), dtype=np.uint64) #linearly spaced list from 0 to nmax
+        vclist_T2 = np.linspace(0, nmax, num=int(nT2), dtype=np.uint64)      # linearly spaced list from 0 to nmax
     vclist_T2 = list(vclist_T2)
     if CO.options['randomize']:
         random.shuffle(vclist_T2)
@@ -206,4 +209,4 @@ def create_lists(CO, R1, R2):
     print('-'*25)
     for value in vclist_T2:
         print(f'{value:d}')
-    print('\n')
+    print()
