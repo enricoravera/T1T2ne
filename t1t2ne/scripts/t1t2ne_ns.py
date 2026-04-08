@@ -24,11 +24,15 @@ class NSCmd(BaseCommand):
         parser.add_argument('--basedir', type=str, help='Base directory for the experiment (where the reference spectrum is located)')
         parser.add_argument('--tract', type=str, help='expno of the TRACT experiment (used to estimate the SNR). Either this or --hsqc should be provided')
         parser.add_argument('--hsqc', type=str, help='expno of the reference HSQC spectrum (used to estimate the SNR). Either this or --tract should be provided')
+        parser.add_argument('--snr2d', action='store_true', help='Evaluate SNR directly from the 2D spectrum peaks, disregard all other options.')
         parser.add_argument('--nres', type=int, help='The number of non-proline residues in the protein. If not provided, it will be estimated from the molecular weight.')
         parser.add_argument('--lw', type=float, help='The linewidth of the peaks in the reference spectrum in Hz. If not provided, it will be estimated from the reference spectrum.')
         parser.add_argument('--xred', nargs='*', help='The percent residual signal for the longest delay of the experiment, or NOE efficiency as percentage. Accepts a list, computes the optimal number of scans for each value')
+        parser.add_argument('--B0', type=float, help='The magnetic field strength in Tesla.')
+        parser.add_argument('--tau', nargs='*', help='The correlation times to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one. The values should be in seconds.')
+        parser.add_argument('--basl', action='store_true', help='Whether to use baseline correction.')
+        parser.add_argument('--integrate', action='store_true', help='Whether to integrate the peaks in the reference spectrum.')
         parser.add_argument('--T', nargs=1, help='Temperature in Kelvin (used to recompute tau_c based on temperature)')
-        parser.add_argument('--phase', '-p', action='store_true', help='Whether to phase the spectra.')
         parser.add_argument('--S2', nargs='*', help='The order parameters to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one')
         parser.add_argument('--idp', action='store_true', help='Whether to use the IDP model to compute the spectral density function.')
         parser.add_argument('--MW', type=float, help='The molecular weight of the protein in kDa, used to estimate the number of residues of the protein. In the IDP model it is also used to compute tau_slow. If not specified, will raise an error if --idp is used.')
@@ -38,7 +42,7 @@ class NSCmd(BaseCommand):
         parser.add_argument('--theta', type=float, default=17, help='The angle between the 1H-15N bond and the principal axis of the CSA tensor in degrees. Default is 17 degrees.')
     @staticmethod
     def run(args: argparse.Namespace) -> None:
-        CO = t1t2ne_utils.Conf_Optns(args, module='NS')
+        CO = t1t2ne_utils.Conf_Optns(args, module='ns')
         SNR = estimate_snr(CO)
         suggest_scans(CO, SNR)
         t1t2ne_utils.the_end(CO)
@@ -78,6 +82,72 @@ def estimate_snr(CO):
         The function prints the estimated SNR per scan for a single peak, suggests a number of scans for the three experiments, and updates the ``references`` attribute of the ``CO`` object with the references used for the calculations.
     """
 
+    if CO.options['snr2d'] and (not hasattr(CO, 'hsqc') or CO.hsqc is None):
+        raise ValueError('--snr2d requires an HSQC spectrum.')
+
+
+    #estimate signal to noise ratio. if HSQC is provided, use it. Else, use the TRACT
+    if CO.hsqc is not None:
+        path_hsqc = os.path.join(CO.basedir, f'{CO.hsqc}')
+        S_hsqc = kz.Spectrum_2D(path_hsqc)
+        version = t1t2ne_utils.fs_version(S_hsqc)
+        if version == 'topspin3':
+            S_hsqc.acqus['GRPDLY'] += 1
+        S_hsqc.procs['wf'][-1]['mode'] = 'em'
+        S_hsqc.procs['wf'][-1]['lb'] = 1/S_hsqc.acqus['AQ2']
+        S_hsqc.procs['zf'][-1] = 2 * S_hsqc.fid.shape[-1]
+        S_hsqc.pknl()
+        S_hsqc.xf2()
+        S_hsqc.projf2(0)
+        trace = S_hsqc.Trf2['0.00']
+        ns = S_hsqc.ngdic['acqus']['NS']
+        ntr = S_hsqc.acqus['TD1']  
+        if CO.options['snr2d']:
+            S_hsqc.procs['p0_2'] = 0
+            S_hsqc.procs['p1_2'] = 0
+            S_hsqc.procs['p0_1'] = 0
+            S_hsqc.procs['p1_1'] = 0                    
+            S_hsqc.adjph()
+            snr_f1, snr_f2 = kz.anal.snr(S_hsqc.ppm_f1, S_hsqc.ppm_f2, S_hsqc.rr, gui=True)
+            SNR = min(snr_f1, snr_f2)/(2*np.sqrt(ns))
+            print(textcolor(f'\nSNR per scan for a single peak: {SNR:.2f}\n', 'green'))
+            return SNR            
+    else:
+        path = os.path.join(CO.basedir, f'{CO.tract}')
+    #load the dataset and check if it's a TRACT experiment
+        S = kz.Pseudo_2D(path)
+        if not t1t2ne_utils.istract(S):
+            raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
+        version = t1t2ne_utils.fs_version(S_hsqc)
+        if version == 'topspin3':
+            S_hsqc.acqus['GRPDLY'] += 1
+        Sa, Sb = split_tract(S)
+    trace.S = kz.processing.hilbert(trace.r)
+    trace.procs['p0'] = 0
+    trace.procs['p1'] = 0        
+    trace.adjph()
+    if CO.options['integrate']:
+        trace.integrate(filename='hsqctrace')
+        A = 0
+        for key in trace.integrals.keys():
+            A += trace.integrals[key]
+    else:
+        if CO.options['basl']:
+            trace.abs_v2()
+        signalregion = kz.fit.get_region(trace.ppm, trace.r, fig_title='Signal region for SNR estimation')
+        signal = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.r, signalregion)
+
+        ntr = int(input('Enter the number of transients used to acquire the HSQC (default 128): ').strip() or 128)
+        ns = S.ngdic['acqus']['NS']
+        x = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.ppm, signalregion)
+    noiseregion = kz.fit.get_region(trace.ppm, trace.r, fig_title='Noise region for SNR estimation')        
+    noise = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.r, noiseregion)    
+    noisestd = kz.anal.noise_std(noise)
+    CO.add_ref('klassez')    
+
+    if not CO.options['integrate']:
+        result = f_fit.fit_skewnormal(x, signal)
+        model, A, a = f_fit.skgaussian_ls(result.params, x, signal, result=True)
 
     if hasattr(CO, 'MW') and CO.MW is not None:
         MW = CO.MW
@@ -118,59 +188,6 @@ def estimate_snr(CO):
     else:
         amidelinewidth = CO.lw
     amidelinewidth_p = kz.misc.freq2ppm(amidelinewidth, CO.B_0*kz.sim.gamma['1H'])
-
-    #estimate signal to noise ratio. if HSQC is provided, use it. Else, use the TRACT
-    if CO.hsqc is not None:
-        path_hsqc = os.path.join(CO.basedir, f'{CO.hsqc}')
-        S_hsqc = kz.Spectrum_2D(path_hsqc)
-        version = t1t2ne_utils.fs_version(S_hsqc)
-        if version == 'topspin3':
-            S_hsqc.acqus['GRPDLY'] += 1
-        S_hsqc.procs['wf'][-1]['mode'] = 'em'
-        S_hsqc.procs['wf'][-1]['lb'] = 1/S_hsqc.acqus['AQ2']
-        S_hsqc.procs['zf'][-1] = 2 * S_hsqc.fid.shape[-1]
-        S_hsqc.pknl()
-        S_hsqc.xf2()
-        S_hsqc.projf2(0)
-        trace = S_hsqc.Trf2['0.00']
-        trace.S = kz.processing.hilbert(trace.r)
-        if CO.options['phase']:
-            trace.adjph()
-        signalregion = kz.fit.get_region(trace.ppm, trace.r, fig_title='Signal region for SNR estimation')
-        signal = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.r, signalregion)
-        noiseregion = kz.fit.get_region(trace.ppm, trace.r, fig_title='Noise region for SNR estimation')        
-        noise = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.r, noiseregion)
-        ntr = S_hsqc.acqus['TD1']
-        ns = S_hsqc.ngdic['acqus']['NS']
-        x = t1t2ne_utils.extract_regions_from_trace(trace.ppm, trace.ppm, signalregion)
-    
-    else:
-        path = os.path.join(CO.basedir, f'{CO.tract}')
-
-
-    #load the dataset and check if it's a TRACT experiment
-        S = kz.Pseudo_2D(path)
-        if not t1t2ne_utils.istract(S):
-            raise NameError(f'Experiment {CO.tract} is not a TRACT experiment')
-        version = t1t2ne_utils.fs_version(S_hsqc)
-        if version == 'topspin3':
-            S_hsqc.acqus['GRPDLY'] += 1
-        Sa, Sb = split_tract(S)
-        if CO.options['phase']:
-            Sb.adjph(ref=0)
-        signalregion = kz.fit.get_region(Sb.ppm_f2, Sb.rr[0], fig_title='Signal region for SNR estimation')        
-        noiseregion = kz.fit.get_region(Sb.ppm_f2, Sb.rr[0], fig_title='Noise region for SNR estimation')
-        noise = t1t2ne_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.rr[0], noiseregion)
-        signal = t1t2ne_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.rr[0], signalregion)
-        ntr = float(input('Enter the number of transients (or press enter to use the default value 128): ').strip() or 128)
-        ns = Sb.ngdic['acqus']['NS']
-        x = t1t2ne_utils.extract_regions_from_trace(Sb.ppm_f2, Sb.ppm_f2, signalregion)        
-    
-    CO.add_ref('klassez')    
-
-    result = f_fit.fit_skewnormal(x, signal)
-    model, A, a = f_fit.skgaussian_ls(result.params, x, signal, result=True)
-    noisestd = kz.anal.noise_std(noise)
     
     print(f'\nEstimated MW of the protein: {MW:.2f} kDa, which corresponds to approximately {nres:.0f} residues')
     #divide the area of the skew normal by the number of residues

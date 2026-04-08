@@ -411,27 +411,33 @@ class Conf_Optns:
             'small': parser.small if hasattr(parser, 'small') else None, # makelists option
             'idp': parser.idp if hasattr(parser, 'idp') else None, # all except ns
             'randomize': parser.randomize if hasattr(parser, 'randomize') else None, # makelists option
-            'readints': parser.readints if hasattr(parser, 'readints') else None # tract options
+            'readints': parser.readints if hasattr(parser, 'readints') else None, # tract options
+            'basl': parser.basl if hasattr(parser, 'basl') else None, # ns options
+            'snr2d': parser.snr2d if hasattr(parser, 'snr2d') else None, #ns options
         }
-        if self.module != 'tract':
+        if self.module not in ['tract', 'ns']:
             if self.options['integrate'] or self.options['selectregion']:
-                raise ValueError('The --integrate, --selectregion and --phase options are only valid for the TRACT module. Please remove them and run the script again.')
+                raise ValueError('The --integrate, --selectregion and --phase options are only valid for the TRACT and NS modules. Please remove them and run the script again.')
         else:
             if self.options['smoothdata'] and self.options['smoothrates']:
                 raise ValueError('The --smoothdata and --smoothrates options are mutually exclusive, as they are used to apply a Savitzky-Golay filter to the spectra or to the relaxation rates, respectively. Please choose one of the two options and run the script again.')
             if self.options['integrate'] and self.options['selectregion']:
                 raise ValueError('The --integrate and --selectregion options are mutually exclusive, as they are used to apply different methods for the analysis of TRACT experiments. Please choose one of the two options and run the script again.')
+            if self.options['integrate'] and self.options['basl']:
+                raise ValueError('The --integrate and --basl options are mutually exclusive.')
             if self.options['integrate'] is None and self.options['selectregion'] is None:
                 print('Neither --integrate nor --selectregion options were provided. Defaulting to --selectregion.')
                 self.options['integrate'] = False
                 self.options['selectregion'] = True   
-        if self.module != 'makelists':
+        if self.module not in ['makelists', 'interactive']:
             if self.options['large'] or self.options['small']:
                 raise ValueError('The --large and --small options are only valid for the makelists module. Please remove them and run the script again.')
         else:
             if self.options['large'] and self.options['small']:
                 raise ValueError('The --large and --small options are mutually exclusive, as they are used to suggest different vdlist for the design of T1 and T2 experiments. Please choose one of the two options and run the script again.')        
-        
+        if self.module != 'ns':
+            if self.options['basl'] or self.options['snr2d']:
+                raise ValueError('The --basl and --snr2d are only valid for the NS module') 
         
     def evaluate_S2_tau(self, parser):
         """
@@ -651,7 +657,7 @@ class Conf_Optns:
                     raise ValueError('Unsupported combination of nuclei. Please provide the theta to be used.')
         if hasattr(parser, 'xred') and parser.xred is not None:
             self.xred = [float(x) for x in parser.xred]
-        if self.module=='NS':
+        if self.module=='ns':
             if not hasattr(self, 'xred'):
                 print('No value provided for the xred parameter. Defaulting to [0.1, 0.3, 0.7].')
                 self.xred = [0.1, 0.3, 0.7]
@@ -775,17 +781,18 @@ class Conf_Optns:
                 self.tract = None
                 self.hsqc = None
             else:
-                ReadDefault = input('No config file provided. Do you want to read the default experiments from the package? (y/n): ')
-                if ReadDefault.lower() == 'y':
-                    example_resource = files('t1t2ne') / 'examples'
-                    with as_file(example_resource) as example_path:
-                        self.basedir = example_path
-                    self.tract = '11'
-                    self.hsqc = '4'
-                else:
-                    self.basedir = input('Please provide the base directory of the experiment: ')
-                    self.tract = input('Please provide the experiment number of the TRACT experiment: ')
-                    self.hsqc = input('Please provide the experiment number of the reference HSQC spectrum: ')
+                if self.module not in ['interactive', 'ns']:
+                    ReadDefault = input('No config file provided. Do you want to read the default experiments from the package? (y/n): ')
+                    if ReadDefault.lower() == 'y':
+                        example_resource = files('t1t2ne') / 'examples'
+                        with as_file(example_resource) as example_path:
+                            self.basedir = example_path
+                        self.tract = '11'
+                        self.hsqc = '4'
+                    else:
+                        self.basedir = input('Please provide the base directory of the experiment: ')
+                        self.tract = input('Please provide the experiment number of the TRACT experiment: ')
+                        self.hsqc = input('Please provide the experiment number of the reference HSQC spectrum: ')
         if self.module == 'interactive':
             self.basedir = None
             self.tract = None
@@ -800,8 +807,10 @@ class Conf_Optns:
             if self.module == 'ns':
                 if hasattr(parser, 'hsqc') and parser.hsqc is not None:
                     self.hsqc = int(parser.hsqc)
+                elif hasattr(parser, 'tract') and parser.tract is not None:
+                    self.tract = int(parser.tract)
                 else:   
-                    raise ValueError('The --hsqc option must be provided when the --basedir option is used to specify the base directory of the experiment. Please provide it and run the script again.')
+                    raise ValueError('The --hsqc option or the --tract option must be provided when the --basedir option is used to specify the base directory of the experiment. Please provide it and run the script again.')
         if hasattr(parser, 'tract') and parser.tract is not None:
             self.tract = int(parser.tract)
         if hasattr(parser, 'hsqc') and parser.hsqc is not None:
