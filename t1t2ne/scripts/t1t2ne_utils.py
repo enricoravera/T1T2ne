@@ -146,11 +146,12 @@ def f4(value):
     str
         The formatted string.
     """
-    if value < 5e-4:
+    if value < 1e-3:
         return f'{value*1e6:.2f}u'
-    if value < 5e-2:
+    elif 1e-3 <= value and value < 1:
         return f'{value*1e3:.2f}m'
-    return f'{value:.5f}'
+    else:
+        return f'{value:.5f}'
 
 def istract(S):
     """
