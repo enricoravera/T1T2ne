@@ -36,6 +36,6 @@ The algorithm works as follows:
 .. seealso::
 
    :class:`t1t2ne.scripts.t1t2ne_ns`
-   :fubn:`klassez.anal.snr`
+   :func:`klassez.anal.snr`
 
 

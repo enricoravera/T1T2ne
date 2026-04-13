@@ -40,7 +40,7 @@ Let us assume we have a protein of 8.6 kDa (ubiquitin) and we want to measure T\
 With the obtained T\ :sub:`1`\  value, also the suggested interscan delay for the hetNOE experiment is provided.
 
 The same process is then repeated for the T\ :sub:`2`\  experiment, using the sequence `hsqct2etf3gptcwg1d.rav` and setting the ``l29`` and ``l31`` to the suggested initial values.
-The only difference in this procedure is that the software will **NEVER** suggest to acquire a T\ :sub:`2`\  experiment with a delay longer than 250 ms to avoid damage to probe, or sample, or spectrometer hardware. 
+The only difference in this procedure is that the software will **NEVER** suggest to acquire a T\ :sub:`2`\  experiment with total CPMG time with a duty cycle larger than 250 ms with the Bruker library settings, to avoid damage to probe, or sample, or spectrometer hardware. 
 
 The software accepts several command line options to customize the procedure:
 
@@ -60,7 +60,7 @@ The software accepts several command line options to customize the procedure:
 
     -   ``--S2``: the Lipari-Szabo order parameter S2 to use for the calculation of tau_c. In IDP mode, two values should be provide, else only one
     -   ``--MW``: the molecular weight of the protein in kDa, to be used for estimating the longest correlation time (tau_slow in the IDP model).
-    -   ``--tau``: the correlation times to use for the estimation of the initial delays. In IDP mode, two values should be provided, else only one. If not set, they will be estimated from the MW. Otherwise, default T\ :sub:`1`\ and T\ :sub:`2`\  values will be used for the non-IDP model, and the three-tau model described in `Bolognesi et al.`_ for the IDP model.
+    -   ``--tau``: the correlation times to use for the estimation of the initial delays. In IDP mode, two values should be provided, else only one. If not set, they will be estimated from the MW. Otherwise, default T\ :sub:`1`\ and T\ :sub:`2`\  values will be used for the non-IDP model, and the three-tau model described in `Rezaei-Galeh et al.`_ for the IDP model.
     -   ``--idp``: whether the system under study is an intrinsically disordered protein (IDP). If set, the software will use the three-tau model described above. Default is False.
 
         -   If set, it will also select a longer delay in the cpmg for the T\ :sub:`2`\  experiment, optimized for the expected relaxation behavior of IDPs as described by `Bolognesi et al.`_.
@@ -77,6 +77,7 @@ The software accepts several command line options to customize the procedure:
     -   ``--nucs``: the nuclei to use for the calculation of the relaxation rates. Default is 1H and 15N.
 
 .. _Bolognesi et al.: https://doi.org/10.1016/j.pnmrs.2025.101577
+.. _Rezaei-Galeh et al.: https://doi.org/10.1002/anie.201808172
 
 .. seealso:: 
 
