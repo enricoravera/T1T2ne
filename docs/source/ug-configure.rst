@@ -19,8 +19,25 @@ Prerequisites
 
 - Python >= 3.10 must be available on the workstation.
 - TopSpin must be installed locally on the workstation.
-- T1T2ne must be installed (for example with ``pip install t1t2ne``).
 - For the *configuration step only*: you must be an NMR superuser (TopSpin admin).
+
+Installation (NMR superuser)
+----------------------------
+
+Install the software as described in the `Installation guide`_. On a linux workstation, we have installed miniconda in the /opt/miniconda3 directory, and then installed T1T2ne in a conda environment named `t1t2ne` with the command:
+
+::
+
+    conda create --name t1t2ne python=3.10
+    conda activate t1t2ne
+    pip install t1t2ne
+
+At the end of the installation, for each user, you can initialize conda and the enviroment with:
+
+::
+
+    /opt/miniconda3/bin/conda init bash
+    conda activate t1t2ne
 
 One-time configuration (NMR superuser)
 --------------------------------------
