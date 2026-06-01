@@ -46,6 +46,7 @@ If I have a 8.6 kDa protein (ubiquitin) and a 600 MHz spectrometer, the script s
 In any case, the software will generate a delay list for the TRACT experiment that covers a range of delays that is appropriate for the expected correlation time, and that maximizes the `Fisher Information criterium`_ for matching the decay rates of both :math:`\alpha` and :math:`\beta` components of the \ :sup:`1`\ H- :sup:`15`\ N doublet. 
 
 The output looks like this:
+
 .. code-block:: console
 
     $ t1t2ne setuptract --MW 6.2 --Larmor 600
@@ -113,6 +114,7 @@ The output looks like this:
     - Salvi, N., Abyzov, A., Blackledge, M. (2017). Atomic resolution conformational dynamics of intrinsically disordered proteins from NMR spin relaxation. Progress in Nuclear Magnetic Resonance Spectroscopy, 102-103, 43-60. DOI: 10.1016/j.pnmrs.2017.06.001
 
     *****************************************************
+
 
 The software accepts several command line options to customize the procedure:
 
