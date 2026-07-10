@@ -1,0 +1,40 @@
+##TITLE= Audit trail, TopSpin 3.8.0
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= nmrsu
+$$ /opt/DATASETS/data/nmrsu/nmr/260324_Synu_t1t2ne/30/audita.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2026-03-25 23:23:13.312 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <acquisition in progress>)
+(   2,<2026-03-25 23:23:18.754 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <
+       started at 2026-03-25 23:23:13.362 +0100,
+       POWCHK enabled, PULCHK disabled,
+       terminated by command 'stop'
+       configuration hash MD5:
+       17 5F 78 B3 C1 CB 17 69 4D CE 8D 3E 04 5D D9 81>)
+(   3,<2026-03-25 23:23:24.787 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <acquisition in progress>)
+(   4,<2026-03-25 23:23:29.866 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <
+       started at 2026-03-25 23:23:24.865 +0100,
+       POWCHK enabled, PULCHK disabled,
+       terminated by command 'stop'
+       configuration hash MD5:
+       17 5F 78 B3 C1 CB 17 69 4D CE 8D 3E 04 5D D9 81>)
+(   5,<2026-03-25 23:23:50.604 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <acquisition in progress>)
+(   6,<2026-03-26 15:24:05.699 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <created by zg on data set with UUID '4c906cd4-2899-11f1-aece-a0369f70191c'
+       started at 2026-03-25 23:23:50.670 +0100,
+       POWCHK enabled, PULCHK disabled,
+       completed at 2026-03-26 15:24:05.698 +0100
+
+       configuration hash MD5:
+       17 5F 78 B3 C1 CB 17 69 4D CE 8D 3E 04 5D D9 81
+       data hash MD5: 2K * 512 * 8
+       17 CF 8F 15 DF B6 B8 A3 CE D6 41 09 77 AB 35 62>)
+##END=
+
+$$ hash MD5
+$$ B6 09 B9 11 6C 1D 3A 72 52 28 28 94 67 62 5F 63

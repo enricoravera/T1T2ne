@@ -1,0 +1,31 @@
+##TITLE= Audit trail, TopSpin 3.8.0
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= nmrsu
+$$ /opt/DATASETS/data/nmrsu/nmr/260324_Synu_t1t2ne/32/audita.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2026-03-27 16:27:32.168 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <acquisition in progress>)
+(   2,<2026-03-27 16:27:38.810 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <
+       started at 2026-03-27 16:27:32.181 +0100,
+       POWCHK enabled, PULCHK disabled,
+       terminated by command 'stop'
+       configuration hash MD5:
+       17 5F 78 B3 C1 CB 17 69 4D CE 8D 3E 04 5D D9 81>)
+(   3,<2026-03-27 16:27:48.147 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <acquisition in progress>)
+(   4,<2026-03-28 01:59:09.915 +0100>,<nmrsu>,<av600.intranet.nmr>,<go4>,<TopSpin 3.8.0>,
+      <created by zg on data set with UUID '82a57f54-29f1-11f1-ad84-a0369f70191c'
+       started at 2026-03-27 16:27:48.160 +0100,
+       POWCHK enabled, PULCHK disabled,
+       completed at 2026-03-28 01:59:09.914 +0100
+
+       configuration hash MD5:
+       17 5F 78 B3 C1 CB 17 69 4D CE 8D 3E 04 5D D9 81
+       data hash MD5: 2K * 512 * 2
+       9E 45 5F DA BE 36 44 77 EA E5 F9 B4 E9 02 8D D5>)
+##END=
+
+$$ hash MD5
+$$ 35 40 31 74 A5 F4 86 BE A5 FB E7 AE C6 B4 25 A8
