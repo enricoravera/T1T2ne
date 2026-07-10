@@ -75,7 +75,7 @@ The dipolar coupling is described through the constants :math:`p` and :math:`\de
 
 .. math:: \delta = -\frac{\Delta \sigma \gamma_N}{3} 
     
- Where:
+Where:
 
     -   :math:`\mu_0` is the vacuum permeability in T m/A
     -   :math:`h` is the Planck constant in J s
@@ -194,6 +194,7 @@ Where:
 Setup of relaxation experiments
 *******************************
 
+.. include:: ug-configure.rst
 .. include:: ug-interactive.rst
 .. include:: ug-makelists.rst
 .. include:: ug-ns.rst

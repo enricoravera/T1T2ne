@@ -78,14 +78,5 @@ The results are shown in the following figure.
 
 At the end of the analysis, the software provides the command to generate the lists for running T\ :sub:`1`\  and T\ :sub:`2`\  experiments based on the obtained correlation time.
 
-.. rubric:: Examples
-
-**TODO** da popolare
-
-
-
-.. rubric:: TODO
-
-Non si capisce dove parli di IDP e dove no. Popola la sezione *Esempi* spostando i pezzi dove invochi il codice e spieghi a cosa serve cosa. Nel testo principale lascia la teoria e i risultati generali.
 
 

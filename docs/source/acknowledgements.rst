@@ -16,6 +16,8 @@ We would like to thank the `CERM/CIRMMP staff`_ who suggested features and teste
     -   Linda Cerofolini - *UniFI* - Testing and suggestions
     -   Giacomo Parigi - *UniFI* - Discussion on relaxation theory
 
+We also thank the master student Petra Vukovic from the University of Zagreb, visiting our lab under the Erasmus+ traineship program for testing the software.
+
 In addition, we would like to mention that the idea for developing this software came from a staff exchange visit between CIRMMP and LIOS as a part of the `MRLatvia`_ project.
 
 .. _CERM/CIRMMP staff: https://www.cerm.unifi.it/about-us/people
