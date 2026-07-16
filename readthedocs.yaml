@@ -19,3 +19,8 @@ build:
     post_install:
       - pip install -r docs/requirements.txt
 
+python:
+  install:
+    - method: pip
+      path: .
+

@@ -6,4 +6,3 @@ scipy
 lmfit
 klassez
 matplotlib>=3.8
-
