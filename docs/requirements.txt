@@ -1,7 +1,7 @@
 sphinx>=8.2.3
 sphinx-rtd-theme>=2.0.0
 numpydoc
-numpy
+numpy<=2.3.3
 scipy
 lmfit
 klassez
